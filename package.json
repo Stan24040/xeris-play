@@ -1,0 +1,1 @@
+{"name":"xeris-play","version":"2.0.0","description":"On-chain casino on the Xeris blockchain","private":true,"scripts":{"dev":"npx serve public -p 3000","deploy":"vercel --prod"},"license":"MIT","engines":{"node":">=18"}}
