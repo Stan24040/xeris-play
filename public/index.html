@@ -4,8 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>XERIS.PLAY — On-Chain Casino | Play with XRS</title>
-<meta name="description" content="The premier on-chain casino built on the Xeris blockchain. Play Crash, Dice, Roulette, Blackjack and Plinko with real XRS. 0% house edge. Instant withdrawals."/>
-<meta name="keywords" content="xeris, xrs, blockchain casino, crypto casino, crash game, dice, roulette, blackjack, plinko, defi gaming"/>
+<meta name="description" content="The premier on-chain casino built on the Xeris blockchain. Play Crash, Dice, Roulette and Blackjack with real XRS. 0% house edge. Instant withdrawals."/>
+<meta name="keywords" content="xeris, xrs, blockchain casino, crypto casino, crash game, dice, roulette, blackjack, defi gaming"/>
 <meta name="theme-color" content="#c8ff00"/>
 <meta name="robots" content="index, follow"/>
 <link rel="canonical" href="https://xeris.play"/>
@@ -14,13 +14,13 @@
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://xeris.play"/>
 <meta property="og:title" content="XERIS.PLAY — On-Chain Casino"/>
-<meta property="og:description" content="5 provably fair casino games powered by the Xeris blockchain. 0% house edge. Instant XRS withdrawals."/>
+<meta property="og:description" content="4 provably fair casino games powered by the Xeris blockchain. 0% house edge. Instant XRS withdrawals."/>
 <meta property="og:image" content="/icon-512.png"/>
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:title" content="XERIS.PLAY — On-Chain Casino"/>
-<meta name="twitter:description" content="Crash · Dice · Roulette · Blackjack · Plinko. Powered by Xeris Blockchain."/>
+<meta name="twitter:description" content="Crash · Dice · Roulette · Blackjack. Powered by Xeris Blockchain."/>
 <meta name="twitter:image" content="/icon-512.png"/>
 
 <!-- PWA -->
@@ -225,7 +225,6 @@ main.visible{display:block}
 .abtn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
 .abtn.go{background:linear-gradient(135deg,var(--green),#00aa55);color:#000}
 .abtn.spin{background:linear-gradient(135deg,var(--pink),#cc0044);color:#fff}
-.abtn.plnk{background:linear-gradient(135deg,var(--purple),#7700cc);color:#fff}
 .abtn.cashout{background:linear-gradient(135deg,var(--yellow),#cc9900);color:#000}
 .rbox{margin-top:14px;background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:13px;
   text-align:center;min-height:50px;display:flex;align-items:center;justify-content:center}
@@ -307,12 +306,6 @@ main.visible{display:block}
 .bjdbl{border-color:var(--yellow);color:var(--yellow);background:rgba(255,215,0,.06)}
 .bjdbl:hover:not(:disabled){background:var(--yellow);color:#000}
 
-/* ── PLINKO ── */
-.plwrap{display:flex;flex-direction:column;align-items:center}
-#plinkoCanvas{border-radius:10px;background:var(--s2);border:1px solid var(--br);display:block;max-width:100%}
-.bucketrow{display:flex;gap:2px;margin-top:4px;width:100%;max-width:420px}
-.bkt{flex:1;text-align:center;padding:5px 1px;border-radius:0 0 6px 6px;font-size:.56rem;font-weight:700;
-  font-family:'Orbitron',sans-serif;border:1px solid;border-top:none;transition:box-shadow .3s,transform .2s}
 
 /* ── TICKER ── */
 .ticker{background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:8px 16px 8px 58px;
@@ -376,6 +369,37 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
   .dash-stats{grid-template-columns:repeat(3,1fr)}
   .dash-actions{grid-template-columns:1fr 1fr}
 }
+
+/* ─── ESCROW WALLET BAR ─── */
+.escrow-bar{display:flex;align-items:center;gap:10px;padding:11px 15px;margin-bottom:14px;
+  background:rgba(200,255,0,.04);border:1px solid rgba(200,255,0,.2);border-radius:10px;flex-wrap:wrap}
+.escrow-bar.warn{background:rgba(255,215,0,.05);border-color:rgba(255,215,0,.25)}
+.escrow-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.escrow-dot.on{background:var(--green);box-shadow:0 0 7px var(--green)}
+.escrow-dot.warn{background:var(--yellow);box-shadow:0 0 6px var(--yellow)}
+.escrow-col{flex:1;min-width:0;overflow:hidden}
+.escrow-lbl{font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:1px}
+.escrow-val{font-family:'Orbitron',sans-serif;font-size:.73rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.escrow-badge{display:inline-flex;align-items:center;gap:3px;border-radius:5px;padding:1px 7px;
+  font-size:.63rem;letter-spacing:.06em;font-weight:600;vertical-align:middle;margin-left:6px}
+.escrow-badge.live{background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.3);color:var(--green)}
+.escrow-badge.off{background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.28);color:var(--yellow)}
+.escrow-edit{background:none;border:1px solid var(--br);border-radius:6px;color:var(--dim);
+  font-size:.65rem;padding:3px 9px;cursor:pointer;font-family:'Rajdhani',sans-serif;
+  white-space:nowrap;flex-shrink:0;transition:border-color .2s,color .2s}
+.escrow-edit:hover{border-color:var(--xrs);color:var(--xrs)}
+.escrow-form{display:none;width:100%;margin-top:8px;gap:8px;align-items:flex-start;flex-direction:column}
+.escrow-form.open{display:flex}
+.escrow-row{display:flex;gap:8px;width:100%}
+.escrow-input{flex:1;background:var(--bg);border:1px solid var(--br);color:var(--text);
+  font-family:'Rajdhani',sans-serif;font-size:.88rem;padding:8px 12px;border-radius:7px;outline:none;
+  transition:border-color .2s}
+.escrow-input:focus{border-color:var(--xrs)}
+.escrow-save{background:linear-gradient(135deg,var(--xrs),var(--xrs2));border:none;border-radius:7px;
+  color:#060a00;font-family:'Orbitron',sans-serif;font-size:.67rem;font-weight:700;
+  padding:8px 14px;cursor:pointer;white-space:nowrap}
+.escrow-err{font-size:.72rem;color:var(--pink);display:none}
+
 </style>
 </head>
 <body>
@@ -440,7 +464,7 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
         </div>
         <div class="form-group">
           <label class="form-label">XRS Deposit Address <span style="color:var(--dim)">(optional)</span></label>
-          <input class="form-input" id="regAddr" type="text" placeholder="Your XRS wallet address for deposits" autocomplete="off"/>
+          <input class="form-input" id="regAddr" type="text" placeholder="XRS wallet address — wins airdropped here (optional)" autocomplete="off"/>
           <div class="form-error" id="regAddrError"></div>
         </div>
         <button class="form-submit" id="registerBtn" onclick="doRegister()">CREATE ACCOUNT</button>
@@ -474,6 +498,22 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
         </div>
       </div>
       <div class="dash-body">
+        <!-- ESCROW PAYOUT WALLET — xeris-arcade airdrop pattern -->
+        <div class="escrow-bar warn" id="escrowBar">
+          <div class="escrow-dot warn" id="escrowDot"></div>
+          <div class="escrow-col">
+            <div class="escrow-lbl">Payout Wallet<span class="escrow-badge off" id="escrowBadge">BALANCE ONLY</span></div>
+            <div class="escrow-val" id="escrowVal" style="color:var(--yellow)">Add your XRS address to receive on-chain payouts</div>
+          </div>
+          <button class="escrow-edit" onclick="toggleEscrowEdit(event)">✎ Edit</button>
+        </div>
+        <div class="escrow-form" id="escrowForm">
+          <div class="escrow-row">
+            <input class="escrow-input" id="escrowInput" type="text" placeholder="Your XRS wallet address (base58)…" autocomplete="off"/>
+            <button class="escrow-save" onclick="saveEscrowWallet()">SAVE</button>
+          </div>
+          <div class="escrow-err" id="escrowErr"></div>
+        </div>
         <div class="dash-stats">
           <div class="dstat">
             <div class="dstat-lbl">Balance</div>
@@ -616,7 +656,7 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
   <div class="landing-hero">
     <div class="landing-tag">Powered by Xeris Blockchain</div>
     <h1 class="landing-title">Play Fair.<br><span>Win Big.</span><br>On-Chain.</h1>
-    <p class="landing-sub">5 provably fair casino games. Real XRS currency. Zero house edge. Create your account and start playing in seconds.</p>
+    <p class="landing-sub">4 provably fair casino games. Real XRS currency. Zero house edge. Create your account and start playing in seconds.</p>
     <div class="landing-cta">
       <button class="cta-primary" onclick="openAuth('register')">Create Account</button>
       <button class="cta-secondary" onclick="openAuth('login')">Sign In</button>
@@ -626,7 +666,6 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
       <div class="feat"><div class="feat-icon">🎲</div><div class="feat-name">DICE</div><div class="feat-desc">Over, under, exact</div></div>
       <div class="feat"><div class="feat-icon">🎡</div><div class="feat-name">ROULETTE</div><div class="feat-desc">35× straight-up payout</div></div>
       <div class="feat"><div class="feat-icon">🃏</div><div class="feat-name">BLACKJACK</div><div class="feat-desc">3:2 on natural BJ</div></div>
-      <div class="feat"><div class="feat-icon">📌</div><div class="feat-name">PLINKO</div><div class="feat-desc">100× max multiplier</div></div>
     </div>
   </div>
 </div>
@@ -659,12 +698,6 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
       <div class="cb"><div class="cname">BLACKJACK</div><div class="cdesc">Beat the dealer to 21. Hit, stand, or double down to win.</div>
         <div class="cstats"><div class="stat"><div class="sl">Blackjack</div><div class="sv">3:2</div></div><div class="stat"><div class="sl">Edge</div><div class="sv">0%</div></div></div>
         <button class="pbtn" onclick="openGame('blackjack')">Play Now</button></div>
-    </div>
-    <div class="gcard" id="card-plinko" style="--ac:var(--purple)">
-      <div class="ch"><div class="cicon">📌</div><div class="cbadge">NEW</div></div>
-      <div class="cb"><div class="cname">PLINKO</div><div class="cdesc">Drop the ball through pegs and land in a multiplier bucket.</div>
-        <div class="cstats"><div class="stat"><div class="sl">Max Win</div><div class="sv">100×</div></div><div class="stat"><div class="sl">Edge</div><div class="sv">0%</div></div></div>
-        <button class="pbtn" onclick="openGame('plinko')">Play Now</button></div>
     </div>
   </div>
 
@@ -765,23 +798,6 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
     </div>
   </div>
 
-  <!-- PLINKO -->
-  <div class="arena" id="arena-plinko">
-    <div class="ah"><span style="font-size:1.2rem">📌</span><span class="at">PLINKO</span><button class="acl" onclick="closeGame()">✕ Close</button></div>
-    <div class="ab">
-      <div class="plwrap">
-        <canvas id="plinkoCanvas" width="420" height="350"></canvas>
-        <div class="bucketrow" id="buckets" style="max-width:420px"></div>
-      </div>
-      <div class="bet-row" style="margin-top:12px">
-        <span class="blbl">Bet</span><input class="binput" id="pBet" type="number" value="10" min="0.01" step="0.01">
-        <button class="qbtn" onclick="half('pBet')">½</button><button class="qbtn" onclick="dbl('pBet')">2×</button>
-        <button class="abtn plnk" id="pBtn" onclick="dropPlinko()">Drop!</button>
-      </div>
-      <div class="rbox"><span class="rtxt neutral" id="pRes">Set your bet and drop the ball</span></div>
-      <div class="hrow" id="pH"></div>
-    </div>
-  </div>
 </main>
 
 <footer>
@@ -853,9 +869,49 @@ async function submitTx(txBase64) {
   } finally { clearTimeout(tid); }
 }
 
-/* Auto-send XRS from treasury to a player address.
-   Returns { ok, signature, error } */
-async function autoSend(toAddress, amountXRS) {
+/* ═══════════════════════════════════════════════════════════════════
+   ESCROW ENGINE  ─  xeris-arcade pattern
+   ─────────────────────────────────────────────────────────────────
+   xeris-arcade/server.js escrow flow:
+     1.  Player registers XRS wallet address
+     2.  Player deposits → XRS enters treasury/escrow wallet on-chain
+     3.  Player bets    → balance deducted instantly (off-chain UX)
+     4.  Player WINS    → server calls  GET /airdrop/:address/:amount
+                          Node signs & broadcasts from escrow → player
+                          No client-side key needed — node does it
+     5.  Player LOSES   → bet stays in escrow (house keeps it)
+     6.  Player withdraws → autoSend() fires from treasury to player
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Step 4 core call — xeris-arcade's exact airdrop endpoint */
+async function escrowAirdrop(toAddress, amountXRS) {
+  if (!toAddress || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(toAddress))
+    return { ok:false, error:'invalid address' };
+  const amt  = parseFloat(amountXRS.toFixed(4));
+  const path = `/airdrop/${toAddress}/${amt}`;
+  const url  = IS_PROD
+    ? `${PROXY}?target=net&path=${encodeURIComponent(path)}`
+    : `http://${NODE_IP}:${NET_PORT}${path}`;
+  const ctl = new AbortController();
+  const tid = setTimeout(() => ctl.abort(), 14000);
+  try {
+    const r   = await fetch(url, { signal: ctl.signal });
+    const txt = await r.text();
+    let d;
+    try { d = JSON.parse(txt); } catch { d = { raw: txt.trim() }; }
+    // Node returns various shapes — cover them all
+    const sig = d?.signature || d?.txid || d?.id || d?.hash
+              || (r.ok && typeof d?.raw === 'string' && d.raw.length > 8 ? d.raw : null);
+    if (sig) return { ok:true, signature:sig };
+    if (d?.success === true || d?.status === 'ok' || r.ok) return { ok:true, signature:'confirmed' };
+    return { ok:false, error: d?.error || d?.message || `HTTP ${r.status}` };
+  } catch(e) {
+    return { ok:false, error: e.name==='AbortError' ? 'node timeout' : e.message };
+  } finally { clearTimeout(tid); }
+}
+
+/* Fallback signed transfer (used for manual withdrawals) */
+async function signedTransfer(toAddress, amountXRS) {
   try {
     const blockhash = await getBlockhash() || ('bh-'+Date.now());
     const txPayload = {
@@ -873,12 +929,57 @@ async function autoSend(toAddress, amountXRS) {
       meta: {app:'xeris.play', payout:true, ts:Date.now()}
     };
     const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(txPayload))));
-    const d = await submitTx(b64);
+    const d   = await submitTx(b64);
     const sig = d?.signature || d?.txid || d?.id || null;
-    return {ok: !!sig, signature: sig, error: d?.error || null};
+    return {ok: !!sig, signature:sig, error: d?.error||null};
   } catch(e) {
-    return {ok: false, signature: null, error: e.message};
+    return {ok: false, signature:null, error: e.message};
   }
+}
+
+/* autoSend: tries airdrop first, falls back to signed transfer */
+async function autoSend(toAddress, amountXRS) {
+  const r = await escrowAirdrop(toAddress, amountXRS);
+  if (r.ok) return r;
+  return signedTransfer(toAddress, amountXRS);
+}
+
+/* escrowPayout: called by settleWin on every game win
+   • Credits balance immediately (non-blocking — instant UX)
+   • Fires on-chain airdrop to player's registered wallet async
+   • Stamps tx history entry with on-chain confirmation once done  */
+function escrowPayout(username, amountXRS, gameLabel) {
+  const u = DB.getUser(username); if (!u) return;
+  const addr  = u.xrsAddress || '';
+  const valid = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr);
+
+  // Always credit balance first — instant feedback
+  DB.addBalance(username, amountXRS, {
+    type:'win', label: gameLabel || 'Win',
+    amount:+amountXRS, onChain:false, ts:Date.now()
+  });
+  DB.recordWin(username, amountXRS);
+
+  if (!valid) return; // No wallet — balance win only, done
+
+  // Fire airdrop in background (non-blocking)
+  const label = gameLabel || 'Win';
+  escrowAirdrop(addr, amountXRS).then(res => {
+    const u2 = DB.getUser(username); if (!u2) return;
+    // Find our win entry and stamp it with the chain result
+    const entry = (u2.txHistory||[]).find(t =>
+      t.type === 'win' && t.label === label && !t.onChain && !t.sig);
+    if (entry) {
+      entry.onChain = res.ok;
+      entry.sig     = res.signature || null;
+      entry.label   = res.ok
+        ? `${label} ⛓ → …${addr.slice(-6)}`
+        : `${label} (node offline — balance credited)`;
+    }
+    DB.saveUser(u2);
+    if (res.ok)
+      toast(`⛓ ${fmtXRS(amountXRS)} airdropped → …${addr.slice(-6)}`, 'var(--blue)');
+  }).catch(() => {});
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1164,10 +1265,74 @@ function openDashboard() {
   // Pre-fill withdrawal address
   if (u.xrsAddress) $$('withdrawAddr').value = u.xrsAddress;
 
+  // Escrow wallet bar
+  renderEscrowBar(u);
+
   // Transaction history
   renderTxHistory(u);
 
   $$('dashOverlay').classList.add('open');
+}
+
+function renderEscrowBar(u) {
+  const dot   = $$('escrowDot');
+  const val   = $$('escrowVal');
+  const badge = $$('escrowBadge');
+  const bar   = $$('escrowBar');
+  const inp   = $$('escrowInput');
+  const addr  = u.xrsAddress || '';
+  const valid = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr);
+  if (valid) {
+    dot.className   = 'escrow-dot on';
+    val.textContent = addr.slice(0,10) + '…' + addr.slice(-10);
+    val.style.color = 'var(--green)';
+    badge.className = 'escrow-badge live';
+    badge.textContent = '⛓ ON-CHAIN';
+    bar.className   = 'escrow-bar';
+    bar.style.borderColor = 'rgba(0,255,136,.28)';
+  } else {
+    dot.className   = 'escrow-dot warn';
+    val.textContent = 'Add your XRS address to receive on-chain payouts';
+    val.style.color = 'var(--yellow)';
+    badge.className = 'escrow-badge off';
+    badge.textContent = 'BALANCE ONLY';
+    bar.className   = 'escrow-bar warn';
+    bar.style.borderColor = '';
+  }
+  if (inp) inp.value = addr;
+}
+
+function toggleEscrowEdit(e) {
+  if (e) e.stopPropagation();
+  const form = $$('escrowForm');
+  const open = form.classList.contains('open');
+  form.classList.toggle('open', !open);
+  $$('escrowErr').style.display = 'none';
+  if (!open) {
+    const u = getCurrentUser();
+    $$('escrowInput').value = u?.xrsAddress || '';
+    setTimeout(() => $$('escrowInput').focus(), 50);
+  }
+}
+
+function saveEscrowWallet() {
+  const errEl = $$('escrowErr');
+  const addr  = ($$('escrowInput').value || '').trim();
+  errEl.style.display = 'none';
+  if (addr && !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) {
+    errEl.textContent   = 'Invalid XRS address — must be base58, 32–44 characters.';
+    errEl.style.display = 'block'; return;
+  }
+  const u = getCurrentUser(); if (!u) return;
+  const fresh = DB.getUser(u.username);
+  fresh.xrsAddress = addr;
+  DB.saveUser(fresh); _currentUser = fresh;
+  renderEscrowBar(fresh);
+  $$('escrowForm').classList.remove('open');
+  if ($$('withdrawAddr')) $$('withdrawAddr').value = addr;
+  toast(addr
+    ? '✓ Payout wallet saved — wins will be airdropped on-chain!'
+    : 'Payout wallet removed', addr ? 'var(--green)' : 'var(--dim)');
 }
 
 function closeDashboard() { $$('dashOverlay').classList.remove('open'); }
@@ -1427,8 +1592,8 @@ function placeBet(amount) {
 
 function settleWin(amount, label) {
   const u = getCurrentUser(); if (!u) return;
-  DB.addBalance(u.username, amount, { type:'win', label: label||'Win', amount:+amount, ts:Date.now() });
-  DB.recordWin(u.username, amount);
+  // fires escrow airdrop on-chain + credits balance
+  escrowPayout(u.username, amount, label || 'Win');
   _currentUser = DB.getUser(u.username);
   showBal(amount);
 }
@@ -1450,7 +1615,7 @@ function bgClose(e, id) { if (e.target === $$(id)) { if(id==='authOverlay') clos
    ═══════════════════════════════════════════════════════════════════ */
 function initTicker(){
   const names=['ShadowX','LuckyKat','Bolt99','NeonRider','ZeroEdge','FairPlay','HighRoller','DiamondK','NightOwl','Starfall'];
-  const games=['Crash','Dice','Roulette','Blackjack','Plinko'];
+  const games=['Crash','Dice','Roulette','Blackjack'];
   const items=[];
   for(let i=0;i<14;i++){
     const w=Math.random()>.45, a=(Math.random()*490+6).toFixed(2);
@@ -1475,7 +1640,6 @@ function openGame(g){
   $$('card-'+g).classList.add('active');
   setTimeout(()=>$$('arena-'+g).scrollIntoView({behavior:'smooth',block:'nearest'}),60);
   if(g==='crash') initCrashCanvas();
-  if(g==='plinko') initPlinko();
   if(g==='dice') refreshDP();
 }
 function closeGame(){
@@ -1701,62 +1865,6 @@ function bjStand(){
   setR('bjRes',win?'win':ps===ds?'neutral':'lose',msg); addH('bj',win,ps+'/'+ds);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   📌 PLINKO
-   ═══════════════════════════════════════════════════════════════════ */
-const PMULTS=[100,20,8,3,1.5,0.3,1.5,3,8,20,100];
-const PCOLORS=['#ff2d78','#ff6600','#ffd700','#88dd00','#c8ff00','#b84dff','#c8ff00','#88dd00','#ffd700','#ff6600','#ff2d78'];
-const PROWS=10;
-function initPlinko(){
-  const row=$$('buckets'); row.innerHTML='';
-  PMULTS.forEach((m,i)=>{ const b=document.createElement('div'); b.className='bkt'; b.id='bkt'+i; b.textContent=m+'×'; b.style.color=PCOLORS[i]; b.style.borderColor=PCOLORS[i]+'44'; b.style.background=PCOLORS[i]+'12'; row.appendChild(b); });
-  pDrawBoard(null,null);
-}
-function pLayout(W,H){
-  const padX=22,topY=28,botY=H-38,rowH=(botY-topY)/PROWS,slotW=(W-padX*2)/PROWS,pegs=[];
-  for(let r=0;r<=PROWS;r++){ const cnt=r+2,totalW=(cnt-1)*slotW,startX=(W-totalW)/2; for(let c=0;c<cnt;c++) pegs.push({x:startX+c*slotW,y:topY+r*rowH,r,c}); }
-  return {pegs,topY,botY,rowH,slotW,padX};
-}
-function pDrawBoard(bx,by){
-  const canvas=$$('plinkoCanvas'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
-  ctx.clearRect(0,0,W,H);
-  const lay=pLayout(W,H);
-  lay.pegs.forEach(p=>{ ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fillStyle='rgba(200,255,0,.5)';ctx.fill(); });
-  if(bx!==null){ ctx.beginPath();ctx.arc(bx,by,9,0,Math.PI*2);ctx.fillStyle='#ffd700';ctx.shadowColor='#ffd700';ctx.shadowBlur=14;ctx.fill();ctx.shadowBlur=0; }
-}
-function dropPlinko(){
-  if(!getCurrentUser()){ openAuth(); return; }
-  const bet=getBet('pBet');
-  const btn=$$('pBtn'); btn.disabled=true;
-  try { placeBet(bet); } catch(e){ btn.disabled=false; toast(e.message,'var(--pink)'); return; }
-  const canvas=$$('plinkoCanvas'),W=canvas.width,H=canvas.height,lay=pLayout(W,H);
-  const dirs=[]; for(let i=0;i<PROWS;i++) dirs.push(Math.random()<.5?0:1);
-  const bucketIdx=dirs.reduce((a,b)=>a+b,0);
-  const topRow=lay.pegs.filter(p=>p.r===0),startX=(topRow[0].x+topRow[1].x)/2,startY=lay.topY-lay.rowH;
-  const frames=[{x:startX,y:startY}]; let slotLeft=0;
-  for(let r=0;r<=PROWS;r++){
-    const dir=dirs[r]??0,row=lay.pegs.filter(p=>p.r===r),pegIdx=Math.min(slotLeft+dir,row.length-1);
-    frames.push({x:row[pegIdx].x,y:row[pegIdx].y}); slotLeft=slotLeft+dir;
-  }
-  const bktX=lay.padX+(bucketIdx+.5)*((W-lay.padX*2)/(PMULTS.length));
-  frames.push({x:bktX,y:lay.botY+5});
-  let fi=0; const SUBS=14;
-  function animFrame(){
-    if(fi>=frames.length-1){
-      pDrawBoard(null,null);
-      const bEl=$$('bkt'+bucketIdx); if(bEl){ bEl.style.boxShadow='0 0 18px '+PCOLORS[bucketIdx];bEl.style.transform='scale(1.1)';setTimeout(()=>{bEl.style.boxShadow='';bEl.style.transform='';},900); }
-      const mult=PMULTS[bucketIdx],won=parseFloat((bet*mult).toFixed(4)),profit=won-bet;
-      settleWin(won,'Plinko ×'+mult);
-      setR('pRes',profit>0?'win':profit<0?'lose':'neutral',mult+'× — '+(profit>0?'Won +'+fmtXRS(profit):profit===0?'Break even':'Lost '+fmtXRS(-profit)));
-      addH('p',profit>=0,mult+'×'); if(profit>0) toast('📌 Won '+fmtXRS(profit),'var(--green)');
-      btn.disabled=false; return;
-    }
-    const a=frames[fi],b2=frames[fi+1]; let sub=0;
-    function subStep(){ if(sub>=SUBS){ fi++;requestAnimationFrame(animFrame);return; } const t=sub/SUBS; pDrawBoard(a.x+(b2.x-a.x)*t,a.y+(b2.y-a.y)*t); sub++; setTimeout(subStep,28); }
-    subStep();
-  }
-  requestAnimationFrame(animFrame);
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    INIT
@@ -1781,6 +1889,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 });
 </script>
-<!-- xeris.play v2.0 — on-chain casino with user dashboard · built 2026-02-21 -->
+<!-- xeris.play v2.2 — 4-game production build · 2026-02-22 -->
 </body>
 </html>
