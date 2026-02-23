@@ -1418,6 +1418,19 @@ function submitDeposit() {
   DB.saveUser(fresh);
   _currentUser = fresh;
 
+  // Auto-verify on-chain and confirm deposit
+  (async () => {
+    try {
+      const r = await fetch('/api/deposit', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ playerAddress: u.payoutWallet, txSignature: txid, amount: gross, username: u.username })
+      });
+      const d = await r.json();
+      if (d.success) { confirmDeposit(u.username, req.id); }
+    } catch(e) { console.error('Deposit verify error:', e); }
+  })();
+
   toast('✓ Deposit request submitted!', 'var(--green)');
   $$('depositAmt').value=''; $$('depositTxid').value='';
   $$('depositPreview').style.display='none';
