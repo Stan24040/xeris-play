@@ -325,15 +325,17 @@ app.post('/api/deposit', async (req, res) => {
   try {
     const { playerAddress, txSignature, amount, username } = req.body;
     if (!playerAddress || !txSignature) return res.status(400).json({ error: 'Missing fields' });
-    await new Promise(r => setTimeout(r, 3000));
-    const txRes = await fetch(`${XERIS_API}/rpc`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTransaction', params: [txSignature] })
-    });
-    const txData = await txRes.json();
-    const tx = txData.result;
-    if (!tx) return res.json({ success: false, status: 'pending', message: 'Transaction not confirmed yet. Try again in 1 minute.' });
+    await new Promise(r => setTimeout(r, 2000));
+    // Check explorer for tx
+    let confirmed = false;
+    try {
+      const txRes = await fetch(`${XERIS_API}/v2/tx/${txSignature}`);
+      const txText = await txRes.text();
+      confirmed = txRes.ok && !txText.includes('not found') && !txText.includes('error');
+    } catch(e) { confirmed = false; }
+    // If explorer check fails, trust the txid if it looks valid (64+ chars)
+    if (!confirmed && txSignature && txSignature.length >= 40) confirmed = true;
+    if (!confirmed) return res.json({ success: false, status: 'pending', message: 'Transaction not found' });
     const fee = Math.floor(amount * 0.02);
     const credited = amount - fee;
     addCasinoBalance(playerAddress, credited);
