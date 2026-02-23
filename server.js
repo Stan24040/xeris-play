@@ -313,6 +313,29 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+
+// Deposit endpoint
+app.post('/api/deposit', async (req, res) => {
+  try {
+    const { playerAddress, txSignature, amount, username } = req.body;
+    if (!playerAddress || !txSignature) return res.status(400).json({ error: 'Missing fields' });
+    await new Promise(r => setTimeout(r, 3000));
+    const txRes = await fetch(`${XERIS_API}/rpc`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTransaction', params: [txSignature] })
+    });
+    const txData = await txRes.json();
+    const tx = txData.result;
+    if (!tx) return res.json({ success: false, status: 'pending', message: 'Transaction not confirmed yet. Try again in 1 minute.' });
+    const fee = Math.floor(amount * 0.02);
+    const credited = amount - fee;
+    res.json({ success: true, status: 'confirmed', credited, fee, txSignature });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Serve frontend
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
