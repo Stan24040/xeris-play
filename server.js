@@ -4,6 +4,12 @@ const nacl = require('tweetnacl');
 const bs58 = require('bs58');
 
 const app = express();
+
+const casinoBalances = {};
+function getCasinoBalance(a){ return casinoBalances[a]||0; }
+function addCasinoBalance(a,n){ casinoBalances[a]=(casinoBalances[a]||0)+n; }
+function deductCasinoBalance(a,n){ casinoBalances[a]=Math.max(0,(casinoBalances[a]||0)-n); }
+
 const PORT = process.env.PORT || 3000;
 
 // ── Xeris Network Config ─────────────────────────────────────────────────────
@@ -330,7 +336,8 @@ app.post('/api/deposit', async (req, res) => {
     if (!tx) return res.json({ success: false, status: 'pending', message: 'Transaction not confirmed yet. Try again in 1 minute.' });
     const fee = Math.floor(amount * 0.02);
     const credited = amount - fee;
-    res.json({ success: true, status: 'confirmed', credited, fee, txSignature });
+    addCasinoBalance(playerAddress, credited);
+    res.json({ success: true, status: 'confirmed', credited, fee, txSignature, newBalance: getCasinoBalance(playerAddress) });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
