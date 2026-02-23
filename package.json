@@ -1,1 +1,16 @@
-{"name":"xeris-play","version":"2.2.0","main":"server.js","scripts":{"start":"node server.js"},"dependencies":{"express":"^4.22.1"},"engines":{"node":">=18"}}
+{
+  "name": "xeris-play",
+  "version": "2.2.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.22.1",
+    "tweetnacl": "^1.0.3",
+    "bs58": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
