@@ -1851,7 +1851,25 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 });
 
+async function detectProvider() {
+  const keys = Object.keys(window).filter(k => 
+    k.toLowerCase().includes('xeris') || 
+    k.toLowerCase().includes('solana') || 
+    k.toLowerCase().includes('wallet') ||
+    k.toLowerCase().includes('xrs') ||
+    k.toLowerCase().includes('phantom')
+  );
+  return keys;
+}
+
 async function connectXerisWallet() {
+  // First detect what's available
+  const detected = await detectProvider();
+  console.log('Detected wallet providers:', detected);
+  
+  const provider = window.xeris || window.xrs || window.solana || 
+                   window.XerisWallet || window.xerisWallet ||
+                   (window.phantom && window.phantom.solana);
   try {
     const provider = window.xeris || window.solana;
     if (!provider) {
