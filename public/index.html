@@ -533,10 +533,10 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
         </div>
 
         <div class="dash-actions">
-          <button class="dash-action-btn btn-deposit" onclick="showPanel('deposit')">
+          <button class="dash-action-btn btn-deposit" onclick="connectXerisWallet()" id="connectWalletBtn">
             <span>⬇</span> DEPOSIT
           </button>
-          <button class="dash-action-btn btn-withdraw" onclick="showPanel('withdraw')">
+          <button class="dash-action-btn btn-withdraw" style="display:none" onclick="showPanel('withdraw')">
             <span>⬆</span> WITHDRAW
           </button>
           <button class="dash-action-btn btn-faucet" onclick="claimFaucet()">
@@ -554,59 +554,18 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
       </div>
     </div>
 
-    <!-- DEPOSIT panel -->
-    <div class="txn-panel" id="depositPanel">
-      <div class="modal-head" style="border-bottom:none;padding-bottom:0">
-        <span class="modal-title">DEPOSIT XRS</span>
-        <button class="modal-close" onclick="closeDashboard()">✕</button>
+    <!-- WALLET CONNECT panel -->
+      <div class="txn-panel" id="depositPanel">
+        <div style="text-align:center;padding:20px;">
+          <div style="font-size:48px;margin-bottom:16px;">🔗</div>
+          <h3 style="color:var(--xrs);margin-bottom:8px;">Connect Xeris Wallet</h3>
+          <p style="color:var(--dim);margin-bottom:20px;font-size:.9rem;">Open this site in your Xeris Wallet browser to connect automatically, or connect below.</p>
+          <div id="walletConnectStatus" style="margin-bottom:16px;"></div>
+          <button class="form-submit" onclick="connectXerisWallet()">CONNECT WALLET</button>
+          <div id="walletConnectError" class="form-error"></div>
+        </div>
       </div>
-      <div class="dash-body" style="padding-top:14px">
-        <button class="txn-back" onclick="showPanel('main')">← Back to Dashboard</button>
-        <div class="txn-address-info">
-          Send XRS to the treasury address below. Your account is credited automatically after confirmation.
-          <br><br>
-          <b id="depositAddr">Loading…</b>
-          <br><br>
-          <small style="color:var(--dim)">Include your username in the memo/note field of your transaction.</small>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Amount (XRS)</label>
-          <input class="form-input" id="depositAmt" type="number" min="1" step="1" placeholder="How much to deposit?" oninput="updateDepositPreview()"/>
-          <div class="xrs-quick-btns">
-            <button class="xrs-quick" onclick="setDepAmt(100)">100</button>
-            <button class="xrs-quick" onclick="setDepAmt(500)">500</button>
-            <button class="xrs-quick" onclick="setDepAmt(1000)">1000</button>
-            <button class="xrs-quick" onclick="setDepAmt(5000)">5000</button>
-          </div>
-        </div>
-        <!-- Fee preview -->
-        <div id="depositPreview" style="display:none;background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:11px 14px;margin-bottom:14px;font-size:.8rem">
-          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-            <span style="color:var(--dim)">Gross deposit</span>
-            <span id="depGross" style="font-family:'Orbitron',sans-serif;font-size:.76rem">—</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-            <span style="color:var(--pink)">2% platform fee</span>
-            <span id="depFee" style="font-family:'Orbitron',sans-serif;font-size:.76rem;color:var(--pink)">—</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;border-top:1px solid var(--br);padding-top:6px;margin-top:2px">
-            <span style="color:var(--green);font-weight:700">You receive</span>
-            <span id="depNet" style="font-family:'Orbitron',sans-serif;font-size:.78rem;color:var(--green);font-weight:700">—</span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Transaction Signature / TxID <span style="color:var(--dim)">(optional)</span></label>
-          <input class="form-input" id="depositTxid" type="text" placeholder="Paste tx signature to verify faster"/>
-        </div>
-        <div class="form-error" id="depositError"></div>
-        <button class="form-submit" onclick="submitDeposit()">SUBMIT DEPOSIT REQUEST</button>
-        <p style="font-size:.72rem;color:var(--dim);text-align:center;margin-top:12px;line-height:1.5">
-          Deposits are reviewed and credited within 5–30 minutes. A 2% fee is retained by the platform.
-        </p>
-      </div>
-    </div>
-
-    <!-- WITHDRAW panel -->
+<!-- WITHDRAW panel -->
     <div class="txn-panel" id="withdrawPanel">
       <div class="modal-head" style="border-bottom:none;padding-bottom:0">
         <span class="modal-title">WITHDRAW XRS</span>
