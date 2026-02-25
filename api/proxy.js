@@ -1,35 +1,74 @@
-'use strict';
-// XERIS.PLAY Proxy — Vercel serverless function
-// Forwards HTTPS frontend → HTTP Xeris node (avoids mixed-content)
-const NODE_IP='138.197.116.81',RPC_PORT=50008,NET_PORT=56001;
-const BASE={rpc:'http://'+NODE_IP+':'+RPC_PORT+'/rpc',api:'http://'+NODE_IP+':'+RPC_PORT,net:'http://'+NODE_IP+':'+NET_PORT};
-const SAFE=/^[/a-zA-Z0-9\-_.~%:@!$&'()*+,;=?#[\]]*$/;
-function safePath(raw){if(!raw)return '';const d=decodeURIComponent(raw);if(d.includes('..')||d.includes('//'))return null;if(!SAFE.test(d))return null;return d;}
-module.exports=async function(req,res){
-  res.setHeader('Access-Control-Allow-Origin','*');
-  res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers','Content-Type');
-  res.setHeader('X-Content-Type-Options','nosniff');
-  if(req.method==='OPTIONS')return res.status(204).end();
-  if(!['GET','POST'].includes(req.method))return res.status(405).json({error:'Method not allowed'});
-  const target=((req.query.target)||'rpc').toLowerCase();
-  const base=BASE[target];
-  if(!base)return res.status(400).json({error:'Unknown target'});
-  let url=base;
-  if(target!=='rpc'&&req.query.path){const p=safePath(req.query.path);if(p===null)return res.status(400).json({error:'Invalid path'});url=base+p;}
-  let body;
-  if(req.method==='POST'){
-    body=await new Promise((res,rej)=>{const c=[];req.on('data',d=>c.push(Buffer.isBuffer(d)?d:Buffer.from(d)));req.on('end',()=>res(Buffer.concat(c).toString('utf8')));req.on('error',rej);});
-    if(Buffer.byteLength(body,'utf8')>524288)return res.status(413).json({error:'Body too large'});
+/**
+ * xeris.fun — Vercel Edge Proxy
+ * Routes HTTPS frontend requests to the HTTP Xeris node,
+ * bypassing browser mixed-content restrictions.
+ *
+ * Endpoints:
+ *   GET/POST /api/proxy?target=rpc          → node:50008/rpc  (JSON-RPC)
+ *   GET      /api/proxy?target=api&path=... → node:50008/{path}
+ *   GET/POST /api/proxy?target=net&path=... → node:56001/{path}
+ */
+
+const NODE = '138.197.116.81';
+const PORTS = { rpc: 50008, api: 50008, net: 56001 };
+const PATHS = { rpc: '/rpc', api: '', net: '' };
+
+const ALLOWED_ORIGINS = [
+  'https://xeris.fun',
+  'https://www.xeris.fun',
+];
+
+export default async function handler(req, res) {
+  // ── CORS ──
+  const origin = req.headers.origin || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Vary', 'Origin');
+
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
   }
-  const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),12000);
-  try{
-    const up=await fetch(url,{method:req.method,headers:{'Content-Type':'application/json'},body:body??undefined,signal:ctl.signal});
-    const ct=up.headers.get('content-type')||'application/json';
-    const txt=await up.text();
-    res.setHeader('Content-Type',ct);res.setHeader('Cache-Control','no-store');
-    return res.status(up.status).send(txt);
-  }catch(e){
-    return res.status(502).json({error:e.name==='AbortError'?'Node timed out':'Proxy: '+e.message});
-  }finally{clearTimeout(t);}
-};
+
+  // ── Route ──
+  const { target, path: extraPath = '' } = req.query;
+  const port = PORTS[target];
+  if (!port) {
+    res.status(400).json({ error: 'Invalid target. Use rpc, api, or net.' });
+    return;
+  }
+
+  // Sanitise extra path — allow only safe characters
+  const safePath = extraPath.replace(/[^a-zA-Z0-9/_.\-]/g, '');
+  const basePath = PATHS[target];
+  const upstreamURL = `http://${NODE}:${port}${basePath}${safePath}`;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+
+    const upstreamRes = await fetch(upstreamURL, {
+      method:  req.method,
+      headers: { 'Content-Type': 'application/json' },
+      body:    req.method !== 'GET' && req.method !== 'HEAD'
+               ? JSON.stringify(req.body)
+               : undefined,
+      signal:  controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    const data = await upstreamRes.text();
+
+    res.setHeader('Content-Type', 'application/json');
+    res.status(upstreamRes.status).send(data);
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      res.status(504).json({ error: 'Upstream timeout' });
+    } else {
+      res.status(502).json({ error: 'Upstream unreachable', detail: err.message });
+    }
+  }
+}
