@@ -422,7 +422,7 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
       <span class="hdr-dot"></span>
       <span id="hdrUsername">Player</span>
     </button>
-    <button class="hdr-login-btn" id="hdrLoginBtn" onclick="openAuth()">Sign In / Register</button>
+    <button class="hdr-login-btn" id="hdrLoginBtn" onclick="connectXerisWallet()">🔗 Connect Wallet</button>
   </div>
 </header>
 
@@ -1850,6 +1850,42 @@ document.addEventListener('DOMContentLoaded',()=>{
     console.error('[XERIS.PLAY] Init error:', e);
   }
 });
+
+async function connectXerisWallet() {
+  try {
+    const provider = window.xeris || window.solana;
+    if (!provider) {
+      // Fallback: show modal asking to open in Xeris Wallet browser
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+      modal.innerHTML = '<div style="background:#0d1428;border:1px solid #c8ff00;border-radius:16px;padding:28px;max-width:380px;width:100%;color:#fff;text-align:center;"><div style="font-size:48px;margin-bottom:12px;">📱</div><h3 style="color:#c8ff00;margin:0 0 12px;">Open in Xeris Wallet</h3><p style="color:#888;margin:0 0 20px;font-size:14px;">Open this site inside the Xeris Wallet app browser to connect your wallet directly.</p><p style="background:#111;padding:10px;border-radius:8px;font-size:12px;word-break:break-all;color:#c8ff00;margin:0 0 16px;">xeris-play-production.up.railway.app</p><button onclick="navigator.clipboard.writeText('xeris-play-production.up.railway.app').then(()=>alert('Copied!'))" style="width:100%;padding:12px;background:#c8ff00;color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;margin-bottom:8px;">Copy Link</button><button onclick="this.closest('div[style]').remove()" style="width:100%;padding:10px;background:transparent;border:1px solid #333;color:#888;border-radius:8px;cursor:pointer;">Close</button></div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+      return;
+    }
+    const resp = await provider.connect();
+    const address = resp.publicKey.toString();
+    let u = DB.getUser(address);
+    if (!u) {
+      u = { username: address.slice(0,6)+'...'+address.slice(-4), passwordHash:'',
+        balance:0, payoutWallet:address, walletConnected:true,
+        txHistory:[], depositRequests:[], totalWon:0, gamesPlayed:0, createdAt:Date.now() };
+      DB.saveUser(u);
+    }
+    try {
+      const r = await fetch('/api/balance/'+address);
+      const d = await r.json();
+      if (d.balance > 0) { u.balance = d.balance/1e9; DB.saveUser(u); }
+    } catch(e){}
+    _currentUser = DB.getUser(address);
+    DB.setSession(address);
+    updateHeaderUI();
+    showGameSection();
+    toast('✓ Wallet connected!', 'var(--green)');
+  } catch(e) {
+    toast('Connection failed: '+e.message, 'var(--pink)');
+  }
+}
 </script>
 <!-- xeris.play v2.2 — 4-game production build · 2026-02-22 -->
 
