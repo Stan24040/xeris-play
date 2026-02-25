@@ -1863,6 +1863,22 @@ async function detectProvider() {
 }
 
 async function connectXerisWallet() {
+  // Debug: show what wallet providers are available
+  const found = [];
+  const check = ['xeris','xrs','solana','phantom','XerisWallet','xerisWallet','XRS','wallet','web3'];
+  for (const k of check) {
+    if (window[k]) found.push(k + ':' + typeof window[k]);
+  }
+  // Also check window keys containing wallet-related terms
+  try {
+    const allKeys = Object.keys(window).filter(k => 
+      k.match(/xeris|solana|wallet|xrs|web3|phantom/i)
+    );
+    if (allKeys.length) found.push('keys:'+allKeys.join(','));
+  } catch(e){}
+  
+  alert('Wallet providers found:\n' + (found.length ? found.join('\n') : 'NONE - window has no wallet provider'));
+  return;
   // First detect what's available
   const detected = await detectProvider();
   console.log('Detected wallet providers:', detected);
