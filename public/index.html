@@ -403,6 +403,19 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.3/nacl.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bs58@4.0.1/index.js"></script>
 <script src="/js/casino.js"></script>
+<script src="/js/xeris-tx.js">
+async function onWalletConnected(address, method) {
+  let u = DB.getUser(address);
+  u.walletConnected=true; u.payoutWallet=address;
+  try{ const r=await fetch('/api/balance/'+address); const d=await r.json(); if(d.balance>0){u.balance=d.balance/1e9;DB.saveUser(u);} }catch(e){}
+  _currentUser=DB.getUser(address); DB.setSession(address);
+  updateHeaderUI(); showGameSection();
+  toast('✓ Wallet connected'+( method==='xeris-browser'? ' via Xeris Wallet' : ''), 'var(--green)');
+  if(window.xeris&&window.xeris.on){ window.xeris.on('disconnect',()=>{clearCurrentUser();toast('Wallet disconnected','var(--pink)');}); }
+}
+window.addEventListener('load', async function(){
+  if(window.xeris){ try{ const a=await XerisTx.silentConnect(); if(a) await onWalletConnected(a,'xeris-browser'); }catch(e){} }
+});</script>
 </head>
 <body>
 <div class="glow-orb"></div>

@@ -3,6 +3,9 @@ const path = require('path');
 const nacl = require('tweetnacl');
 const bs58 = require('bs58');
 
+const xerisBlockhash=require('./api/xeris/blockhash');
+const xerisSubmit=require('./api/xeris/submit');
+
 const app = express();
 
 const casinoBalances = {};
@@ -37,6 +40,9 @@ if (process.env.TREASURY_PRIVATE_KEY) {
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/api/xeris/blockhash',(req,res)=>xerisBlockhash(req,res));
+app.post('/api/xeris/submit',(req,res)=>xerisSubmit(req,res));
 
 // ── Xeris Client Helpers ─────────────────────────────────────────────────────
 async function xerisRPC(method, params = []) {
