@@ -16,7 +16,7 @@ const XERIS_NET = process.env.XERIS_NET || 'http://138.197.116.81:56001';
 const TREASURY_ADDRESS = process.env.TREASURY_ADDRESS || '6G4GroMrVsGjd3xhywxfzXDg7vPn1V2Mky4B3qsXVGHo';
 
 // ── Lottery Config ───────────────────────────────────────────────────────────
-const TICKET_PRICE_LAMPORTS = 10_000_000;  // 0.01 XRS
+const TICKET_PRICE_LAMPORTS = 10_000_000_000;  // 10 XRS
 const DRAW_INTERVAL_MS = 5 * 60 * 1000;   // 5 minutes
 const MAX_TICKETS_PER_BUY = 100;
 
