@@ -173,6 +173,89 @@ select option{background:var(--bg3);}
 /* SPINNER */
 @keyframes spin{to{transform:rotate(360deg);}}
 .spinner{width:18px;height:18px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  nav{padding:0 10px;height:50px;}
+  .logo{font-size:1rem;letter-spacing:1px;}
+  .nav-right{gap:6px;}
+  .nav-link{font-size:.7rem;padding:5px 10px;}
+  #balanceDisplay{font-size:.72rem;padding:4px 8px;}
+  #connectBtn{padding:6px 10px;font-size:.75rem;}
+  .hero{padding:40px 16px 24px;}
+  .hero h1{font-size:clamp(1.6rem,6vw,2.5rem);}
+  .hero p{font-size:.85rem;}
+  .hero-stats{gap:16px;}
+  .stat-val{font-size:1rem;}
+  .section{padding:16px 12px;}
+  .games-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .game-card{padding:14px 10px;}
+  .game-icon{font-size:1.5rem;}
+  .game-name{font-size:.78rem;}
+  .game-desc{font-size:.65rem;}
+  #gamePanel{padding:16px;}
+  .input-row{flex-direction:column;gap:8px;}
+  .input-group{min-width:100%;}
+  .crash-mult{font-size:2.5rem;}
+  .dice-display{flex-direction:column;gap:10px;text-align:center;}
+  .dice-result{font-size:2.2rem;}
+  .roulette-bets{grid-template-columns:repeat(3,1fr);gap:4px;}
+  .rbet{padding:6px;}
+  .rbet-name{font-size:.7rem;}
+  .rbet-odds{font-size:.6rem;}
+  .bj-table{padding:14px;}
+  .card{padding:6px 8px;font-size:.85rem;min-width:36px;}
+  .bj-btn{padding:8px;font-size:.78rem;}
+  .bet-btn{padding:12px;font-size:.9rem;}
+  .result-title{font-size:1.1rem;}
+  .modal{padding:20px;max-width:calc(100% - 24px);}
+  .modal h3{font-size:.95rem;}
+  .modal-btn{padding:11px;font-size:.85rem;}
+  .toast{padding:8px 14px;font-size:.78rem;}
+  .bottom-bar{padding:12px 16px;}
+  .bottom-bar p{font-size:.65rem;}
+  .dep-steps{gap:10px;}
+  .dep-text{font-size:.78rem;}
+  .treasury-addr{font-size:.65rem;}
+}
+
+@media(max-width:380px){
+  nav{padding:0 8px;height:44px;}
+  .logo{font-size:.85rem;letter-spacing:.5px;}
+  .nav-right{gap:4px;}
+  .nav-link{font-size:.6rem;padding:4px 7px;letter-spacing:.5px;}
+  #balanceDisplay{font-size:.65rem;padding:3px 6px;}
+  #connectBtn{padding:5px 8px;font-size:.65rem;letter-spacing:0;}
+  .hero{padding:30px 12px 16px;}
+  .hero-badge{font-size:.6rem;padding:3px 10px;}
+  .hero h1{font-size:clamp(1.3rem,5vw,2rem);}
+  .hero p{font-size:.78rem;}
+  .stat-val{font-size:.9rem;}
+  .stat-label{font-size:.6rem;}
+  .section{padding:12px 8px;}
+  .section-title{font-size:.65rem;}
+  .game-card{padding:12px 8px;}
+  .game-icon{font-size:1.2rem;margin-bottom:4px;}
+  .game-name{font-size:.7rem;}
+  .game-desc{font-size:.58rem;}
+  #gamePanel{padding:12px;}
+  .game-panel-title{font-size:.9rem;}
+  .close-btn{font-size:.7rem;padding:4px 8px;}
+  .crash-display{padding:20px;}
+  .crash-mult{font-size:2rem;}
+  .dice-result{font-size:1.8rem;}
+  .roulette-result{font-size:2rem;}
+  .quick-amounts{gap:4px;}
+  .qa{padding:4px 7px;font-size:.68rem;}
+  input,select{padding:8px 10px;font-size:.8rem;}
+  .input-label{font-size:.65rem;}
+  .bet-btn{padding:10px;font-size:.82rem;}
+  .modal{padding:16px;max-width:calc(100% - 16px);}
+  .modal h3{font-size:.85rem;}
+  .modal p{font-size:.72rem;}
+  .modal-btn{padding:10px;font-size:.8rem;}
+  .modal-cancel{padding:8px;font-size:.75rem;}
+}
 </style>
 </head>
 <body>
