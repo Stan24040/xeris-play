@@ -51,40 +51,12 @@
       z-index: 0;
     }
 
-    /* ── TICKER TAPE ── */
-    .ticker-wrap {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 28px;
-      background: var(--accent);
-      overflow: hidden;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-    }
-    .ticker-inner {
-      display: flex;
-      gap: 64px;
-      animation: ticker 28s linear infinite;
-      white-space: nowrap;
-    }
-    .ticker-inner span {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      color: #07070d;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-    @keyframes ticker {
-      from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
-    }
+    /* ticker removed */
 
     /* ── HEADER ── */
     header {
       position: sticky;
-      top: 28px;
+      top: 0;
       z-index: 90;
       display: flex;
       align-items: center;
@@ -805,9 +777,7 @@
     }
 
     @media (max-width: 380px) {
-      header { top: 24px; }
-      .ticker-wrap { height: 24px; }
-      .ticker-inner span { font-size: 9px; }
+      header { top: 0; }
       .logo { font-size: 18px; letter-spacing: .08em; }
       #connectBtn { font-size: 9px; padding: 5px 10px; letter-spacing: .04em; }
       .hero h1 { font-size: clamp(40px, 14vw, 60px); }
@@ -852,23 +822,6 @@
 
 <a href="#main-content" class="skip-link">Skip to content</a>
 
-<!-- TICKER -->
-<div class="ticker-wrap" role="marquee" aria-label="Network ticker">
-  <div class="ticker-inner" id="tickerInner">
-    <span>◈ XERIS TESTNET LIVE</span>
-    <span>⬡ ROUND #1 NOW OPEN</span>
-    <span>✦ GET FREE XRS FROM FAUCET</span>
-    <span>◈ TICKET PRICE: 10 XRS</span>
-    <span>⬡ POWERED BY XERIS CHAIN</span>
-    <span>✦ TRIPLE CONSENSUS: PoW + PoS + PoH</span>
-    <span>◈ XERIS TESTNET LIVE</span>
-    <span>⬡ ROUND #1 NOW OPEN</span>
-    <span>✦ GET FREE XRS FROM FAUCET</span>
-    <span>◈ TICKET PRICE: 10 XRS</span>
-    <span>⬡ POWERED BY XERIS CHAIN</span>
-    <span>✦ TRIPLE CONSENSUS: PoW + PoS + PoH</span>
-  </div>
-</div>
 
 <!-- HEADER -->
 <header role="banner">
