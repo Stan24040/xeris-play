@@ -1862,6 +1862,15 @@ async function detectProvider() {
 }
 
 async function connectXerisWallet() {
-  // Skip wallet extension detection - show address paste modal directly
-  showXrsConnectModal();
+  var ex=document.getElementById("xrs-cm");
+  if(ex) ex.remove();
+  var m=document.createElement("div");
+  m.id="xrs-cm";
+  m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center";
+  var box=document.createElement("div");
+  box.style.cssText="background:#0d1117;border:1px solid #c8ff00;border-radius:16px;padding:32px;width:90%;max-width:400px";
+  box.innerHTML="<h3 style='color:#c8ff00;margin:0 0 12px'>CONNECT XRS WALLET</h3><p style='color:#888;font-size:13px;margin:0 0 14px'>Paste your Xeris wallet address below.</p><input id='xrs-ai' type='text' placeholder='XRS wallet address...' style='width:100%;padding:12px;background:#111;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;box-sizing:border-box;margin-bottom:10px;font-family:monospace'/><button onclick='doConnectWallet()' style='width:100%;padding:13px;background:#c8ff00;color:#000;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer'>CONNECT</button><div id='xrs-ce' style='color:#ff4444;font-size:12px;margin-top:8px'></div><button onclick='document.getElementById("xrs-cm").remove()' style='width:100%;margin-top:8px;padding:10px;background:none;border:1px solid #333;border-radius:8px;color:#888;cursor:pointer'>Cancel</button>";
+  m.appendChild(box);
+  document.body.appendChild(m);
+  m.onclick=function(e){if(e.target===m)m.remove()};
 }
