@@ -1,9 +1,11 @@
 {
   "name": "xeris-play",
-  "version": "2.2.0",
+  "version": "4.0.0",
+  "description": "SOLPRIZE — On-chain lottery on Xeris blockchain",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "dependencies": {
     "express": "^4.22.1",

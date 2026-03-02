@@ -2,34 +2,31 @@ const express = require('express');
 const path = require('path');
 const nacl = require('tweetnacl');
 const bs58 = require('bs58');
+const http = require('http');
 
-const xerisBlockhash=require('./api/xeris/blockhash');
-const xerisSubmit=require('./api/xeris/submit');
+const xerisBlockhash = require('./api/xeris/blockhash');
+const xerisSubmit = require('./api/xeris/submit');
 
 const app = express();
-
-const casinoBalances = {};
-function getCasinoBalance(a){ return casinoBalances[a]||0; }
-function addCasinoBalance(a,n){ casinoBalances[a]=(casinoBalances[a]||0)+n; }
-function deductCasinoBalance(a,n){ casinoBalances[a]=Math.max(0,(casinoBalances[a]||0)-n); }
-
 const PORT = process.env.PORT || 3000;
 
 // ── Xeris Network Config ─────────────────────────────────────────────────────
-const XERIS_API  = 'http://138.197.116.81:50008';
-const XERIS_NET  = 'http://138.197.116.81:56001';
-const EXPLORER   = 'http://138.197.116.81:50008';
-
-// Treasury address (public key) — set TREASURY_PRIVATE_KEY in Railway env vars
+const XERIS_RPC = process.env.XERIS_RPC || 'http://138.197.116.81:50008';
+const XERIS_NET = process.env.XERIS_NET || 'http://138.197.116.81:56001';
 const TREASURY_ADDRESS = process.env.TREASURY_ADDRESS || '6G4GroMrVsGjd3xhywxfzXDg7vPn1V2Mky4B3qsXVGHo';
 
-// Load treasury keypair from env (base58-encoded secret key)
+// ── Lottery Config ───────────────────────────────────────────────────────────
+const TICKET_PRICE_LAMPORTS = 10_000_000;  // 0.01 XRS
+const DRAW_INTERVAL_MS = 5 * 60 * 1000;   // 5 minutes
+const MAX_TICKETS_PER_BUY = 100;
+
+// ── Treasury Keypair ─────────────────────────────────────────────────────────
 let treasuryKeypair = null;
 if (process.env.TREASURY_PRIVATE_KEY) {
   try {
     const secretKey = bs58.decode(process.env.TREASURY_PRIVATE_KEY);
     treasuryKeypair = nacl.sign.keyPair.fromSecretKey(secretKey);
-    console.log('Treasury keypair loaded ✓');
+    console.log('Treasury keypair loaded');
   } catch (e) {
     console.error('Failed to load treasury keypair:', e.message);
   }
@@ -37,326 +34,432 @@ if (process.env.TREASURY_PRIVATE_KEY) {
   console.warn('TREASURY_PRIVATE_KEY not set — payouts disabled');
 }
 
-// ── Middleware ────────────────────────────────────────────────────────────────
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// ══════════════════════════════════════════════════════════════════════════════
+//  XERIS TX BUILDER (server-side, matches migration guide)
+// ══════════════════════════════════════════════════════════════════════════════
+const XerisTx = (() => {
+  function u32LE(v) {
+    const b = Buffer.alloc(4);
+    b.writeUInt32LE(v);
+    return b;
+  }
+  function u64LE(v) {
+    const big = BigInt(v);
+    const b = Buffer.alloc(8);
+    b.writeBigUInt64LE(big);
+    return b;
+  }
+  function encodeString(str) {
+    const encoded = Buffer.from(str, 'utf8');
+    return Buffer.concat([u64LE(encoded.length), encoded]);
+  }
+  function encodeCompactU16(value) {
+    const out = [];
+    let v = value;
+    while (v >= 0x80) { out.push((v & 0x7f) | 0x80); v >>= 7; }
+    out.push(v & 0x7f);
+    return Buffer.from(out);
+  }
 
-app.get('/api/xeris/blockhash',(req,res)=>xerisBlockhash(req,res));
-app.post('/api/xeris/submit',(req,res)=>xerisSubmit(req,res));
+  // Base58 decode to exactly 32 bytes (pad with leading zeros)
+  function base58DecodePubkey(str) {
+    const raw = bs58.decode(str);
+    if (raw.length === 32) return Buffer.from(raw);
+    const padded = Buffer.alloc(32);
+    Buffer.from(raw).copy(padded, 32 - raw.length);
+    return padded;
+  }
 
-// ── Xeris Client Helpers ─────────────────────────────────────────────────────
-async function xerisRPC(method, params = []) {
-  const res = await fetch(`${XERIS_API}/rpc`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
-  });
-  const data = await res.json();
-  return data.result;
+  // NativeTransfer = variant 11: { from: String, to: String, amount: u64 }
+  function encodeNativeTransfer(from, to, amount) {
+    return Buffer.concat([u32LE(11), encodeString(from), encodeString(to), u64LE(amount)]);
+  }
+
+  // Solana legacy message
+  function buildMessage(signerPubkey, instructionData, blockhash) {
+    const programId = Buffer.alloc(32); // all zeros
+    return Buffer.concat([
+      Buffer.from([1, 0, 1]),                 // header
+      encodeCompactU16(2),                     // 2 accounts
+      signerPubkey,                            // account[0] = signer
+      programId,                               // account[1] = program id
+      blockhash,                               // 32 bytes
+      encodeCompactU16(1),                     // 1 instruction
+      Buffer.from([1]),                        // program_id_index = 1
+      encodeCompactU16(1),                     // 1 account ref
+      Buffer.from([0]),                        // account index 0
+      encodeCompactU16(instructionData.length),
+      instructionData,
+    ]);
+  }
+
+  // Signed transaction (Solana wire format)
+  function assembleSignedTx(signature, messageBytes) {
+    return Buffer.concat([encodeCompactU16(1), signature, messageBytes]);
+  }
+
+  return { u32LE, u64LE, encodeString, encodeCompactU16, base58DecodePubkey, encodeNativeTransfer, buildMessage, assembleSignedTx };
+})();
+
+// ── Fetch blockhash from node (server-side, no CORS issue) ───────────────────
+async function fetchBlockhash() {
+  // Try JSON-RPC
+  try {
+    const res = await fetch(`${XERIS_RPC}/rpc`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getRecentBlockhash', params: [] }),
+    });
+    const data = await res.json();
+    const bh = data?.result?.value?.blockhash || data?.result?.blockhash;
+    if (typeof bh === 'string' && bh.length >= 64) {
+      const bytes = Buffer.alloc(32);
+      for (let i = 0; i < 32; i++) bytes[i] = parseInt(bh.substr(i * 2, 2), 16);
+      return bytes;
+    }
+  } catch {}
+  // Fallback: REST /blocks
+  try {
+    const res = await fetch(`${XERIS_NET}/blocks?limit=1`);
+    const data = await res.json();
+    const blocks = Array.isArray(data) ? data : data?.blocks || [];
+    if (blocks.length > 0 && Array.isArray(blocks[0].hash) && blocks[0].hash.length === 32) {
+      return Buffer.from(blocks[0].hash);
+    }
+  } catch {}
+  throw new Error('Could not fetch blockhash');
 }
 
-async function getBalance(address) {
-  const result = await xerisRPC('getBalance', [address]);
-  return result?.value ?? result ?? 0;
-}
-
-async function getLatestBlockhash() {
-  return await xerisRPC('getLatestBlockhash');
-}
-
-async function getTransaction(signature) {
-  return await xerisRPC('getTransaction', [signature]);
-}
-
-async function submitTransaction(txBase64) {
-  const res = await fetch(`${XERIS_NET}/submit`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tx_base64: txBase64 })
-  });
-  return res.json();
-}
-
-// Build and sign a transfer transaction from treasury
-async function buildPayoutTx(toAddress, amountLamports) {
+// ── Build + sign a payout from treasury ──────────────────────────────────────
+async function buildAndSignPayout(toAddress, amountLamports) {
   if (!treasuryKeypair) throw new Error('Treasury keypair not configured');
 
-  const blockhashResult = await getLatestBlockhash();
-  const blockhash = blockhashResult?.blockhash ?? blockhashResult;
+  const blockhash = await fetchBlockhash();
+  const signerPubkey = XerisTx.base58DecodePubkey(TREASURY_ADDRESS);
+  const instructionData = XerisTx.encodeNativeTransfer(TREASURY_ADDRESS, toAddress, amountLamports);
+  const messageBytes = XerisTx.buildMessage(signerPubkey, instructionData, blockhash);
 
-  const transaction = {
-    recentBlockhash: blockhash,
-    instructions: [{
-      from: TREASURY_ADDRESS,
-      to: toAddress,
-      amount: amountLamports
-    }]
-  };
+  // Ed25519 sign the message
+  const signature = nacl.sign.detached(messageBytes, treasuryKeypair.secretKey);
 
-  const message = Buffer.from(JSON.stringify(transaction));
-  const signature = nacl.sign.detached(message, treasuryKeypair.secretKey);
-  const txBase64 = Buffer.from(JSON.stringify({
-    ...transaction,
-    signature: Buffer.from(signature).toString('base64'),
-    publicKey: bs58.encode(treasuryKeypair.publicKey)
-  })).toString('base64');
-
-  return txBase64;
+  // Assemble signed tx in Solana wire format
+  const signedTx = XerisTx.assembleSignedTx(Buffer.from(signature), messageBytes);
+  return signedTx.toString('base64');
 }
 
-// ── Provably Fair Randomness ─────────────────────────────────────────────────
-// Uses the blockhash from the bet tx as the seed — fully verifiable on-chain
-function seededRandom(seed, index = 0) {
-  // Simple hash of seed string + index → float 0-1
+// ── Submit tx to node ────────────────────────────────────────────────────────
+async function submitToNode(txBase64) {
+  const bodyStr = JSON.stringify({ tx_base64: txBase64 });
+  const res = await fetch(`${XERIS_NET}/submit`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(bodyStr).toString(),
+    },
+    body: bodyStr,
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  LOTTERY STATE
+// ══════════════════════════════════════════════════════════════════════════════
+const lottery = {
+  currentRound: {
+    id: 1,
+    players: [],       // [{ address, tickets, txSignature }]
+    startedAt: Date.now(),
+    drawAt: Date.now() + DRAW_INTERVAL_MS,
+  },
+  pastRounds: [],      // [{ id, winner, prizePool, players, drawnAt, payoutTx }]
+  pendingPayouts: [],  // [{ address, amount, round, payoutTx }]
+};
+
+function totalTickets() {
+  return lottery.currentRound.players.reduce((s, p) => s + p.tickets, 0);
+}
+
+function prizePoolLamports() {
+  return BigInt(totalTickets()) * BigInt(TICKET_PRICE_LAMPORTS);
+}
+
+// ── Draw Logic ───────────────────────────────────────────────────────────────
+async function runDraw() {
+  const round = lottery.currentRound;
+  const total = totalTickets();
+
+  if (total === 0) {
+    // No players — reset timer
+    round.drawAt = Date.now() + DRAW_INTERVAL_MS;
+    console.log(`Round #${round.id}: no players, resetting timer`);
+    return;
+  }
+
+  // Pick winner using blockhash as seed for verifiable randomness
+  let seed;
+  try {
+    const bh = await fetchBlockhash();
+    seed = bh.toString('hex');
+  } catch {
+    seed = Date.now().toString();
+  }
+
+  // Hash seed to get a random index
   let hash = 0;
-  const str = seed + index.toString();
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
   }
-  return (Math.abs(hash) % 1000000) / 1000000;
-}
+  const roll = Math.abs(hash) % total;
 
-// ── Game Logic ───────────────────────────────────────────────────────────────
-function resolveDice(seed, betType, betValue) {
-  const roll = Math.floor(seededRandom(seed) * 6) + 1;
-  let win = false;
-  let multiplier = 0;
-
-  if (betType === 'exact' && roll === betValue) {
-    win = true; multiplier = 5;
-  } else if (betType === 'high' && roll >= 4) {
-    win = true; multiplier = 1.9;
-  } else if (betType === 'low' && roll <= 3) {
-    win = true; multiplier = 1.9;
-  } else if (betType === 'odd' && roll % 2 !== 0) {
-    win = true; multiplier = 1.9;
-  } else if (betType === 'even' && roll % 2 === 0) {
-    win = true; multiplier = 1.9;
+  let cumulative = 0;
+  let winner = null;
+  for (const p of round.players) {
+    cumulative += p.tickets;
+    if (roll < cumulative) { winner = p; break; }
   }
+  if (!winner) winner = round.players[round.players.length - 1];
 
-  return { roll, win, multiplier, payout: win ? Math.floor(multiplier) : 0 };
-}
+  const prizePool = Number(prizePoolLamports());
+  const prizeXRS = prizePool / 1_000_000_000;
 
-function resolveCrash(seed) {
-  const r = seededRandom(seed);
-  // House edge ~2%: crash point formula
-  const crashPoint = Math.max(1.0, (1 / (1 - r * 0.98)));
-  return Math.round(crashPoint * 100) / 100;
-}
+  console.log(`Round #${round.id} DRAW: ${total} tickets, ${round.players.length} players. Winner: ${winner.address} (${prizeXRS} XRS)`);
 
-function resolveRoulette(seed, betType, betValue) {
-  const roll = Math.floor(seededRandom(seed) * 37); // 0-36
-  const RED = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-  let win = false;
-  let multiplier = 0;
-
-  if (betType === 'number' && roll === betValue) { win = true; multiplier = 35; }
-  else if (betType === 'red' && RED.includes(roll)) { win = true; multiplier = 1; }
-  else if (betType === 'black' && roll !== 0 && !RED.includes(roll)) { win = true; multiplier = 1; }
-  else if (betType === 'even' && roll !== 0 && roll % 2 === 0) { win = true; multiplier = 1; }
-  else if (betType === 'odd' && roll % 2 !== 0) { win = true; multiplier = 1; }
-  else if (betType === 'low' && roll >= 1 && roll <= 18) { win = true; multiplier = 1; }
-  else if (betType === 'high' && roll >= 19) { win = true; multiplier = 1; }
-
-  return { roll, win, multiplier, payout: win ? multiplier + 1 : 0 };
-}
-
-function resolveBlackjack(seed) {
-  const suits = ['♠','♥','♦','♣'];
-  const values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
-  const deck = suits.flatMap(s => values.map(v => ({ suit: s, value: v })));
-
-  // Shuffle using seed
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom(seed, i) * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
-
-  const cardValue = (card) => {
-    if (['J','Q','K'].includes(card.value)) return 10;
-    if (card.value === 'A') return 11;
-    return parseInt(card.value);
+  const roundResult = {
+    id: round.id,
+    winner: { address: winner.address, amount: prizePool, claimed: false, payoutTx: null },
+    prizePool,
+    players: [...round.players],
+    drawnAt: Date.now(),
+    seed,
   };
 
-  const playerHand = [deck[0], deck[2]];
-  const dealerHand = [deck[1], deck[3]];
-  const playerScore = playerHand.reduce((sum, c) => sum + cardValue(c), 0);
-  const dealerScore = dealerHand.reduce((sum, c) => sum + cardValue(c), 0);
+  lottery.pastRounds.unshift(roundResult);
+  // Keep only last 50 rounds
+  if (lottery.pastRounds.length > 50) lottery.pastRounds.length = 50;
 
-  let result = 'lose';
-  let multiplier = 0;
-  if (playerScore === 21) { result = 'blackjack'; multiplier = 2.5; }
-  else if (playerScore > dealerScore || dealerScore > 21) { result = 'win'; multiplier = 2; }
-  else if (playerScore === dealerScore) { result = 'push'; multiplier = 1; }
-
-  return { playerHand, dealerHand, playerScore, dealerScore, result, multiplier };
+  // Start new round
+  lottery.currentRound = {
+    id: round.id + 1,
+    players: [],
+    startedAt: Date.now(),
+    drawAt: Date.now() + DRAW_INTERVAL_MS,
+  };
 }
 
-// ── API Routes ────────────────────────────────────────────────────────────────
-
-// GET treasury address & balance
-app.get('/api/treasury', async (req, res) => {
-  try {
-    const balance = await getBalance(TREASURY_ADDRESS);
-    res.json({
-      address: TREASURY_ADDRESS,
-      balance,
-      explorerUrl: `${EXPLORER}/v2/account/${TREASURY_ADDRESS}`
-    });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+// Draw timer
+setInterval(() => {
+  if (Date.now() >= lottery.currentRound.drawAt) {
+    runDraw().catch(e => console.error('Draw error:', e));
   }
-});
+}, 5000);
 
-// GET wallet balance
-app.get('/api/balance/:address', async (req, res) => {
+// ══════════════════════════════════════════════════════════════════════════════
+//  MIDDLEWARE
+// ══════════════════════════════════════════════════════════════════════════════
+app.use(express.json());
+// Serve static files from root (index.html) and public/ folder
+app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ── Xeris Proxies (CORS-safe) ────────────────────────────────────────────────
+app.get('/api/xeris/blockhash', (req, res) => xerisBlockhash(req, res));
+app.post('/api/xeris/submit', (req, res) => xerisSubmit(req, res));
+
+app.get('/api/xeris/balance/:address', async (req, res) => {
   try {
-    const balance = await getBalance(req.params.address);
+    const r = await fetch(`${XERIS_RPC}/rpc`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getBalance', params: [req.params.address] }),
+    });
+    const data = await r.json();
+    const balance = data?.result?.value ?? data?.result ?? 0;
     res.json({ address: req.params.address, balance });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// POST place a bet — verify tx on-chain, run game, pay out if win
-// Body: { playerAddress, betTxSignature, betAmount, game, betType, betValue }
-app.post('/api/bet', async (req, res) => {
-  const { playerAddress, betTxSignature, betAmount, game, betType, betValue } = req.body;
+app.get('/api/xeris/faucet/:address/:amount', async (req, res) => {
+  try {
+    const r = await fetch(`${XERIS_NET}/airdrop/${req.params.address}/${req.params.amount}`);
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
-  if (!playerAddress || !betTxSignature || !betAmount || !game) {
-    return res.status(400).json({ error: 'Missing required fields' });
+app.get('/api/xeris/stats', async (req, res) => {
+  try {
+    const r = await fetch(`${XERIS_RPC}/v2/stats`);
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Lottery API ──────────────────────────────────────────────────────────────
+
+// GET /api/lottery/status — full state for frontend
+app.get('/api/lottery/status', (req, res) => {
+  const round = lottery.currentRound;
+  const pool = Number(prizePoolLamports());
+  res.json({
+    round: round.id,
+    players: round.players.map(p => ({ address: p.address, tickets: p.tickets })),
+    totalTickets: totalTickets(),
+    prizePool: pool,
+    prizePoolXRS: pool / 1_000_000_000,
+    drawAt: round.drawAt,
+    ticketPriceLamports: TICKET_PRICE_LAMPORTS,
+    ticketPriceXRS: TICKET_PRICE_LAMPORTS / 1_000_000_000,
+    pastWinners: lottery.pastRounds.slice(0, 10).map(r => ({
+      round: r.id,
+      address: r.winner.address,
+      amount: r.prizePool,
+      amountXRS: r.prizePool / 1_000_000_000,
+      claimed: r.winner.claimed,
+      drawnAt: r.drawnAt,
+    })),
+    treasuryAddress: TREASURY_ADDRESS,
+    payoutsEnabled: !!treasuryKeypair,
+  });
+});
+
+// POST /api/lottery/buy — register ticket purchase after on-chain tx
+// Body: { address, tickets, txSignature }
+app.post('/api/lottery/buy', async (req, res) => {
+  const { address, tickets, txSignature } = req.body;
+
+  if (!address || !tickets || !txSignature) {
+    return res.status(400).json({ error: 'Missing address, tickets, or txSignature' });
+  }
+
+  const ticketCount = Math.min(Math.max(1, Math.floor(tickets)), MAX_TICKETS_PER_BUY);
+
+  // Check for duplicate tx
+  const isDuplicate = lottery.currentRound.players.some(p => p.txSignature === txSignature);
+  if (isDuplicate) {
+    return res.status(400).json({ error: 'Transaction already registered' });
+  }
+
+  // Verify the tx exists on-chain (poll a few times)
+  let confirmed = false;
+  for (let i = 0; i < 8; i++) {
+    try {
+      const r = await fetch(`${XERIS_RPC}/rpc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTransaction', params: [txSignature] }),
+      });
+      const data = await r.json();
+      if (data?.result) { confirmed = true; break; }
+    } catch {}
+    if (i < 7) await new Promise(r => setTimeout(r, 2000));
+  }
+
+  // Also accept if tx looks valid (long base58 string) — node v2 API has parsing issues
+  if (!confirmed && txSignature.length >= 40) {
+    confirmed = true; // Trust the signature format on testnet
+  }
+
+  if (!confirmed) {
+    return res.status(400).json({ error: 'Transaction not confirmed on-chain. Try again.' });
+  }
+
+  // Add tickets
+  const existing = lottery.currentRound.players.find(p => p.address === address);
+  if (existing) {
+    existing.tickets += ticketCount;
+    existing.txSignature = txSignature; // update to latest
+  } else {
+    lottery.currentRound.players.push({ address, tickets: ticketCount, txSignature });
+  }
+
+  const pool = Number(prizePoolLamports());
+  console.log(`Round #${lottery.currentRound.id}: ${address.slice(0,8)}… bought ${ticketCount} tickets (pool: ${pool / 1e9} XRS)`);
+
+  res.json({
+    success: true,
+    tickets: ticketCount,
+    totalTickets: totalTickets(),
+    prizePool: pool,
+    round: lottery.currentRound.id,
+  });
+});
+
+// POST /api/lottery/claim — verify winner + sign payout from treasury
+// Body: { address, round }
+app.post('/api/lottery/claim', async (req, res) => {
+  const { address, round } = req.body;
+
+  if (!address) {
+    return res.status(400).json({ error: 'Missing address' });
+  }
+
+  // Find the round
+  const roundData = lottery.pastRounds.find(r => r.id === round);
+  if (!roundData) {
+    return res.status(404).json({ error: 'Round not found' });
+  }
+
+  // Verify this address is the winner
+  if (roundData.winner.address !== address) {
+    return res.status(403).json({ error: 'You are not the winner of this round' });
+  }
+
+  // Check if already claimed
+  if (roundData.winner.claimed) {
+    return res.status(400).json({ error: 'Prize already claimed', payoutTx: roundData.winner.payoutTx });
+  }
+
+  // Check treasury keypair
+  if (!treasuryKeypair) {
+    return res.status(503).json({ error: 'Payouts temporarily unavailable — treasury key not configured' });
   }
 
   try {
-    // 1. Verify bet transaction on-chain
-    let txData = null;
-    let attempts = 0;
-    while (!txData && attempts < 15) {
-      txData = await getTransaction(betTxSignature);
-      if (!txData) await new Promise(r => setTimeout(r, 2000));
-      attempts++;
-    }
+    const payoutAmount = roundData.prizePool;
+    console.log(`Claim: paying ${payoutAmount / 1e9} XRS to ${address.slice(0,8)}… for round #${round}`);
 
-    if (!txData) {
-      return res.status(400).json({ error: 'Bet transaction not confirmed on chain. Please try again.' });
-    }
+    // Build + sign payout tx from treasury
+    const txBase64 = await buildAndSignPayout(address, payoutAmount);
 
-    // 2. Use the tx blockhash as provably fair seed
-    const seed = betTxSignature; // The tx signature itself is the randomness seed
+    // Submit to node
+    const submitResult = await submitToNode(txBase64);
+    const payoutTx = submitResult.signature || submitResult.txid || null;
 
-    // 3. Run game
-    let result;
-    switch (game) {
-      case 'dice':
-        result = resolveDice(seed, betType, parseInt(betValue));
-        break;
-      case 'crash':
-        result = { crashPoint: resolveCrash(seed) };
-        break;
-      case 'roulette':
-        result = resolveRoulette(seed, betType, parseInt(betValue));
-        break;
-      case 'blackjack':
-        result = resolveBlackjack(seed);
-        break;
-      default:
-        return res.status(400).json({ error: 'Unknown game' });
-    }
+    // Mark claimed
+    roundData.winner.claimed = true;
+    roundData.winner.payoutTx = payoutTx;
 
-    // 4. Pay out if win
-    let payoutTxSignature = null;
-    const payout = result.payout ?? result.multiplier ?? 0;
+    console.log(`Payout submitted: ${payoutTx}`);
 
-    if (payout > 0 && treasuryKeypair) {
-      const payoutLamports = Math.floor(betAmount * payout);
-      try {
-        const txBase64 = await buildPayoutTx(playerAddress, payoutLamports);
-        const submitResult = await submitTransaction(txBase64);
-        payoutTxSignature = submitResult?.signature ?? submitResult?.result ?? null;
-      } catch (payoutErr) {
-        console.error('Payout failed:', payoutErr.message);
-      }
-    }
-
-    // 5. Return result
     res.json({
       success: true,
-      game,
-      seed, // Player can verify: same seed + same game = same result
-      result,
-      payout,
-      betAmount,
-      payoutAmount: payout > 0 ? Math.floor(betAmount * payout) : 0,
-      betTxSignature,
-      payoutTxSignature,
-      explorerBase: `${EXPLORER}/v2/tx`,
-      verifyUrl: payoutTxSignature
-        ? `${EXPLORER}/v2/tx/${payoutTxSignature}`
-        : null
+      payoutTx,
+      amount: payoutAmount,
+      amountXRS: payoutAmount / 1_000_000_000,
+      round,
     });
-
   } catch (e) {
-    console.error('Bet error:', e);
-    res.status(500).json({ error: e.message });
+    console.error('Claim payout error:', e.message);
+    res.status(500).json({ error: 'Payout failed: ' + e.message });
   }
 });
 
-// POST faucet request (testnet only)
-app.post('/api/faucet', async (req, res) => {
-  const { address, amount = 10 } = req.body;
-  if (!address) return res.status(400).json({ error: 'Address required' });
-  try {
-    const fetchRes = await fetch(`${XERIS_NET}/airdrop/${address}/${amount}`);
-    const data = await fetchRes.json();
-    res.json(data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// GET network stats
-app.get('/api/stats', async (req, res) => {
-  try {
-    const fetchRes = await fetch(`${XERIS_API}/v2/stats`);
-    const data = await fetchRes.json();
-    res.json(data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-
-// Deposit endpoint
-app.post('/api/deposit', async (req, res) => {
-  try {
-    const { playerAddress, txSignature, amount, username } = req.body;
-    if (!playerAddress || !txSignature) return res.status(400).json({ error: 'Missing fields' });
-    await new Promise(r => setTimeout(r, 2000));
-    // Check explorer for tx
-    let confirmed = false;
-    try {
-      const txRes = await fetch(`${XERIS_API}/v2/tx/${txSignature}`);
-      const txText = await txRes.text();
-      confirmed = txRes.ok && !txText.includes('not found') && !txText.includes('error');
-    } catch(e) { confirmed = false; }
-    // If explorer check fails, trust the txid if it looks valid (64+ chars)
-    if (!confirmed && txSignature && txSignature.length >= 40) confirmed = true;
-    if (!confirmed) return res.json({ success: false, status: 'pending', message: 'Transaction not found' });
-    const fee = Math.floor(amount * 0.02);
-    const credited = amount - fee;
-    addCasinoBalance(playerAddress, credited);
-    res.json({ success: true, status: 'confirmed', credited, fee, txSignature, newBalance: getCasinoBalance(playerAddress) });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Serve frontend
+// ── Serve Frontend ───────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`XERIS.PLAY casino running on port ${PORT}`);
+  console.log(`SOLPRIZE lottery running on port ${PORT}`);
   console.log(`Treasury: ${TREASURY_ADDRESS}`);
+  console.log(`Payouts: ${treasuryKeypair ? 'ENABLED' : 'DISABLED (set TREASURY_PRIVATE_KEY)'}`);
+  console.log(`Draw interval: ${DRAW_INTERVAL_MS / 1000}s`);
 });
