@@ -1,1031 +1,259 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SOLPRIZE — Xeris Lottery</title>
-  <meta name="description" content="The provably fair lottery on the Xeris blockchain. Buy tickets with XRS, win big." />
-  <meta property="og:title" content="SOLPRIZE — Xeris Lottery" />
-  <meta property="og:description" content="Buy tickets. Win XRS. On-chain lottery powered by Xeris." />
-  <meta name="theme-color" content="#0a0a0f" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XERIS.FUN — On-Chain Lottery</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden;max-width:100vw}
+body{background:#0a0a0f;color:white;font-family:'Segoe UI',sans-serif;min-height:100vh}
 
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.ticker{background:#adff2f;color:#000;font-size:11px;font-weight:700;padding:6px 0;text-align:center;letter-spacing:2px}
 
-    :root {
-      --bg:        #07070d;
-      --surface:   #0f0f1a;
-      --border:    #1e1e35;
-      --accent:    #c8ff00;
-      --accent2:   #ff3cac;
-      --accent3:   #00e5ff;
-      --text:      #e8e8f0;
-      --muted:     #5a5a7a;
-      --gold:      #ffd84d;
-      --radius:    4px;
-    }
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #1a1a2e}
+.logo{font-size:24px;font-weight:900;color:#adff2f;letter-spacing:2px;text-decoration:none}
+.logo span{color:#ff2d78}
+.header-right{display:flex;align-items:center;gap:10px}
+.nav-link{font-size:11px;font-weight:700;color:#ff2d78;text-decoration:none;letter-spacing:1px;padding:6px 12px;border:1px solid #ff2d78;border-radius:6px;transition:background .2s}
+.nav-link:hover{background:rgba(255,45,120,.12)}
+.net-badge{background:#1a1a2e;border:1px solid #adff2f;color:#adff2f;font-size:10px;padding:4px 10px;border-radius:20px;white-space:nowrap}
+#connectBtn{background:#adff2f;color:#000;font-weight:900;font-size:12px;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;letter-spacing:1px;transition:background .2s;white-space:nowrap}
+#connectBtn:hover{background:#8fd400}
+#connectBtn.connected{background:transparent;color:#adff2f;border:1px solid #adff2f;font-size:11px}
 
-    html { scroll-behavior: smooth; }
+.container{max-width:480px;margin:0 auto;padding:20px}
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-weight: 400;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+.card{background:#12121a;border:1px solid #1e1e2e;border-radius:16px;padding:24px;margin-bottom:16px}
+.card-title{font-size:11px;letter-spacing:3px;color:#555;margin-bottom:16px}
 
-    /* ── GRID BACKGROUND ── */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(200,255,0,.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(200,255,0,.03) 1px, transparent 1px);
-      background-size: 48px 48px;
-      pointer-events: none;
-      z-index: 0;
-    }
+.timer{text-align:center;margin-bottom:20px}
+.timer-val{font-size:48px;font-weight:900;color:#adff2f;font-variant-numeric:tabular-nums}
+.timer-label{font-size:11px;color:#555;letter-spacing:2px}
 
-    /* ticker removed */
+.prize-pool{text-align:center;padding:16px 0;border-top:1px solid #1e1e2e;border-bottom:1px solid #1e1e2e;margin:16px 0}
+.prize-val{font-size:36px;font-weight:900;color:#ff2d78}
+.prize-label{font-size:11px;color:#555;letter-spacing:2px}
+.split{display:flex;justify-content:space-between;font-size:12px;color:#555;margin-top:8px}
+.split span{color:#adff2f}
 
-    /* ── HEADER ── */
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 90;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 32px;
-      height: 64px;
-      background: rgba(7,7,13,.85);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-    }
-    .logo {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
-      letter-spacing: .12em;
-      color: var(--accent);
-      text-decoration: none;
-    }
-    .logo span { color: var(--accent2); }
-    .header-right { display: flex; align-items: center; gap: 16px; }
-    .nav-link {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 8px 16px;
-      color: var(--accent2);
-      text-decoration: none;
-      letter-spacing: .1em;
-      border: 1px solid var(--accent2);
-      transition: background .2s, transform .1s;
-    }
-    .nav-link:hover { background: rgba(255,60,172,.12); transform: translateY(-1px); }
-    .net-pill {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: rgba(0,229,255,.1);
-      color: var(--accent3);
-      border: 1px solid rgba(0,229,255,.25);
-      letter-spacing: .1em;
-      text-transform: uppercase;
-    }
-    #connectBtn {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      padding: 8px 20px;
-      background: var(--accent);
-      color: #07070d;
-      border: none;
-      cursor: pointer;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      transition: background .2s, transform .1s;
-    }
-    #connectBtn:hover { background: #d9ff26; transform: translateY(-1px); }
-    #connectBtn.connected {
-      background: transparent;
-      color: var(--accent);
-      border: 1px solid var(--accent);
-    }
+.round-info{text-align:center;font-size:12px;color:#555}
 
-    /* ── MAIN LAYOUT ── */
-    main {
-      position: relative;
-      z-index: 1;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 60px 24px 100px;
-    }
+.ticket-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.qty-btn{width:44px;height:44px;background:#1a1a2e;border:1px solid #333;border-radius:8px;color:white;font-size:20px;cursor:pointer;flex-shrink:0;transition:border-color .2s}
+.qty-btn:hover{border-color:#adff2f}
+.qty-input{flex:1;text-align:center;background:#0a0a0f;border:1px solid #333;border-radius:8px;color:#adff2f;font-size:24px;font-weight:700;height:44px;outline:none}
+.price-tag{font-size:12px;color:#555;text-align:right;margin-bottom:16px}
+.price-tag span{color:#adff2f;font-weight:700}
 
-    /* ── HERO ── */
-    .hero {
-      text-align: center;
-      margin-bottom: 72px;
-      animation: fadeUp .7s ease both;
-    }
-    .hero-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      letter-spacing: .2em;
-      color: var(--muted);
-      text-transform: uppercase;
-      margin-bottom: 16px;
-    }
-    .hero h1 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(72px, 12vw, 148px);
-      line-height: .92;
-      letter-spacing: .04em;
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent3) 55%, var(--accent2) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 20px;
-    }
-    .hero-sub {
-      font-size: 17px;
-      color: var(--muted);
-      max-width: 480px;
-      margin: 0 auto 32px;
-      line-height: 1.6;
-    }
-    .hero-sub strong { color: var(--text); font-weight: 500; }
+#buyBtn{width:100%;background:#adff2f;color:#000;font-weight:900;font-size:18px;padding:18px;border:none;border-radius:12px;cursor:pointer;letter-spacing:2px;transition:background .2s}
+#buyBtn:hover{background:#8fd400}
+#buyBtn:disabled{background:#1a1a2e;color:#555;cursor:not-allowed}
 
-    /* ── STATS ROW ── */
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      margin-bottom: 56px;
-      animation: fadeUp .7s .15s ease both;
-    }
-    .stat-box {
-      background: var(--surface);
-      padding: 24px 20px;
-      text-align: center;
-    }
-    .stat-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      letter-spacing: .15em;
-      color: var(--muted);
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .stat-val {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 36px;
-      letter-spacing: .04em;
-    }
-    .stat-val.gold { color: var(--gold); }
-    .stat-val.green { color: var(--accent); }
-    .stat-val.pink { color: var(--accent2); }
-    .stat-val.cyan { color: var(--accent3); }
+.faucet-link{display:block;margin-top:12px;text-align:center;font-size:11px;color:#38bdf8;text-decoration:none;letter-spacing:1px}
+.faucet-link:hover{color:#adff2f}
 
-    /* ── TWO-COL LAYOUT ── */
-    .two-col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-bottom: 24px;
-    }
+.status-bar{font-size:11px;color:#555;text-align:center;margin-top:8px;min-height:16px;letter-spacing:.5px}
 
-    /* ── PANEL ── */
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 32px;
-      animation: fadeUp .7s .3s ease both;
-    }
-    .panel-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px;
-      letter-spacing: .1em;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .panel-title .dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: pulse 1.8s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%,100% { opacity: 1; transform: scale(1); }
-      50%      { opacity: .4; transform: scale(.7); }
-    }
+.players-list{max-height:200px;overflow-y:auto}
+.player-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1a1a2e;font-size:13px}
+.player-addr{color:#888;font-family:monospace;font-size:12px}
+.player-tickets{color:#adff2f;font-weight:700}
+.player-pct{color:#555;font-size:11px;min-width:50px;text-align:right}
 
-    /* ── BUY PANEL ── */
-    .ticket-price-row {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-    .price-big {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 48px;
-      color: var(--accent);
-      letter-spacing: .04em;
-    }
-    .price-unit {
-      font-family: 'Space Mono', monospace;
-      font-size: 14px;
-      color: var(--muted);
-    }
-    .qty-row {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      margin-bottom: 16px;
-      border: 1px solid var(--border);
-    }
-    .qty-btn {
-      width: 44px; height: 44px;
-      background: var(--border);
-      border: none;
-      color: var(--text);
-      font-size: 20px;
-      cursor: pointer;
-      transition: background .15s;
-      font-family: 'Space Mono', monospace;
-    }
-    .qty-btn:hover { background: #2a2a45; }
-    #ticketCount {
-      flex: 1;
-      text-align: center;
-      background: transparent;
-      border: none;
-      color: var(--text);
-      font-family: 'Space Mono', monospace;
-      font-size: 22px;
-      padding: 8px;
-      outline: none;
-      -moz-appearance: textfield;
-    }
-    #ticketCount::-webkit-outer-spin-button,
-    #ticketCount::-webkit-inner-spin-button { -webkit-appearance: none; }
+.winners-list{max-height:240px;overflow-y:auto}
+.winner-row{padding:10px 0;border-bottom:1px solid #1a1a2e;display:flex;justify-content:space-between;align-items:center}
+.winner-addr{font-family:monospace;font-size:12px;color:#adff2f}
+.winner-amount{font-size:13px;color:#ff2d78;font-weight:700}
+.winner-meta{font-size:11px;color:#555}
+.empty-state{color:#555;font-size:13px;text-align:center;padding:20px}
 
-    .total-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
-    }
-    .total-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      color: var(--muted);
-      letter-spacing: .1em;
-      text-transform: uppercase;
-    }
-    .total-amount {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
-      color: var(--gold);
-      letter-spacing: .04em;
-    }
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:9998;animation:fadeIn .3s;max-width:90vw;text-align:center;word-break:break-word}
+.toast.success{background:#adff2f;color:#000}
+.toast.error{background:#ff2d78;color:#fff}
+.toast.info{background:#1a1aff;color:#fff}
+@keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+#toastContainer{position:fixed;bottom:80px;left:0;right:0;z-index:9998;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+#toastContainer .toast{position:relative;bottom:auto;left:auto;transform:none;pointer-events:auto}
 
-    #buyBtn {
-      width: 100%;
-      padding: 16px;
-      background: var(--accent);
-      color: #07070d;
-      border: none;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px;
-      letter-spacing: .15em;
-      cursor: pointer;
-      transition: background .2s, transform .1s, box-shadow .2s;
-      position: relative;
-      overflow: hidden;
-    }
-    #buyBtn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.25) 50%, transparent 70%);
-      transform: translateX(-100%);
-      transition: transform .6s;
-    }
-    #buyBtn:hover::before { transform: translateX(100%); }
-    #buyBtn:hover { background: #d9ff26; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(200,255,0,.3); }
-    #buyBtn:active { transform: translateY(0); }
-    #buyBtn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:none;align-items:center;justify-content:center;padding:16px;overflow:hidden}
+.modal-overlay.open{display:flex}
+.modal-box{background:#12121a;border:2px solid #adff2f;border-radius:16px;padding:28px;max-width:400px;width:100%;position:relative}
+.modal-title{font-size:20px;color:#adff2f;font-weight:900;margin-bottom:16px;letter-spacing:1px}
+.modal-close{position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:20px;cursor:pointer}
+.modal-close:hover{color:#ff2d78}
 
-    .faucet-link {
-      display: block;
-      margin-top: 12px;
-      text-align: center;
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      color: var(--accent3);
-      text-decoration: none;
-      letter-spacing: .08em;
-      opacity: .7;
-      transition: opacity .2s;
-    }
-    .faucet-link:hover { opacity: 1; }
+/* Wallet Modal */
+.wallet-option{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #1e1e2e;border-radius:10px;cursor:pointer;transition:border-color .2s;margin-bottom:8px}
+.wallet-option:hover{border-color:#adff2f}
+.wallet-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.wallet-name{font-size:13px;font-weight:700;color:#fff}
+.wallet-desc{font-size:11px;color:#555}
+#xerisWalletBtn{display:none}
+.paste-section{display:none;margin-top:12px}
+.paste-input{width:100%;background:#0a0a0f;border:1px solid #333;border-radius:8px;color:white;padding:10px;font-size:12px;font-family:monospace;outline:none;margin-bottom:8px}
+.paste-input:focus{border-color:#adff2f}
+.paste-submit{width:100%;background:#1a1a2e;color:#adff2f;border:1px solid #adff2f;padding:10px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer}
 
-    /* ── POOL PANEL ── */
-    .pool-visual {
-      position: relative;
-      height: 8px;
-      background: var(--border);
-      border-radius: 4px;
-      margin-bottom: 24px;
-      overflow: hidden;
-    }
-    .pool-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent3));
-      border-radius: 4px;
-      transition: width 1s ease;
-      width: 0%;
-    }
-    .pool-amount {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 56px;
-      color: var(--gold);
-      letter-spacing: .04em;
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-    .pool-unit {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: .1em;
-      margin-bottom: 24px;
-    }
+/* Win Modal */
+.win-amount{font-size:44px;font-weight:900;color:#adff2f;text-align:center;margin:16px 0 4px}
+.win-sub{font-size:12px;color:#555;text-align:center;margin-bottom:16px}
+#claimBtn{width:100%;background:#ff2d78;color:#fff;font-weight:900;font-size:16px;padding:16px;border:none;border-radius:10px;cursor:pointer;letter-spacing:1px;margin-bottom:8px}
+#claimBtn:disabled{background:#1a1a2e;color:#555;cursor:not-allowed}
+.claim-status{font-size:11px;color:#555;text-align:center;min-height:16px}
 
-    .countdown-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      color: var(--muted);
-      letter-spacing: .15em;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-    .countdown {
-      display: flex;
-      gap: 12px;
-    }
-    .cd-unit { text-align: center; }
-    .cd-num {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 42px;
-      color: var(--accent2);
-      letter-spacing: .04em;
-      line-height: 1;
-      display: block;
-    }
-    .cd-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 9px;
-      color: var(--muted);
-      letter-spacing: .12em;
-      text-transform: uppercase;
-    }
-    .cd-sep {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 42px;
-      color: var(--border);
-      line-height: 1;
-    }
-
-    /* ── FULL WIDTH PANELS ── */
-    .full-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 32px;
-      margin-bottom: 24px;
-      animation: fadeUp .7s .45s ease both;
-    }
-
-    /* ── PLAYERS TABLE ── */
-    .players-grid {
-      display: grid;
-      grid-template-columns: 1fr auto auto;
-      gap: 0;
-    }
-    .pg-head {
-      display: contents;
-    }
-    .pg-head > span {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      letter-spacing: .12em;
-      color: var(--muted);
-      text-transform: uppercase;
-      padding: 0 0 12px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 12px;
-    }
-    .pg-head > span:not(:first-child) { text-align: right; }
-    .player-row {
-      display: contents;
-    }
-    .player-row > span {
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(30,30,53,.5);
-      font-size: 13px;
-      vertical-align: middle;
-    }
-    .player-row > span:not(:first-child) { text-align: right; }
-    .player-addr {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      color: var(--accent3);
-    }
-    .player-tickets {
-      font-family: 'Space Mono', monospace;
-      color: var(--accent);
-    }
-    .player-pct { color: var(--muted); font-size: 12px; }
-    .empty-state {
-      text-align: center;
-      padding: 40px;
-      color: var(--muted);
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      letter-spacing: .08em;
-    }
-
-    /* ── WINNERS ── */
-    .winners-list { display: flex; flex-direction: column; gap: 12px; }
-    .winner-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 16px;
-      background: rgba(255,212,77,.04);
-      border: 1px solid rgba(255,212,77,.12);
-    }
-    .winner-left { display: flex; align-items: center; gap: 14px; }
-    .winner-rank {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
-      color: var(--gold);
-      opacity: .4;
-      width: 28px;
-    }
-    .winner-addr {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      color: var(--text);
-    }
-    .winner-round {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-    .winner-amount {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 26px;
-      color: var(--gold);
-      letter-spacing: .04em;
-    }
-
-    /* ── MODAL OVERLAY ── */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(7,7,13,.85);
-      backdrop-filter: blur(8px);
-      z-index: 200;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .25s;
-    }
-    .modal-overlay.open {
-      opacity: 1;
-      pointer-events: all;
-    }
-    .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 40px;
-      max-width: 440px;
-      width: calc(100% - 48px);
-      transform: translateY(20px);
-      transition: transform .25s;
-    }
-    .modal-overlay.open .modal { transform: translateY(0); }
-    .modal-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
-      letter-spacing: .1em;
-      margin-bottom: 8px;
-    }
-    .modal-sub {
-      font-size: 14px;
-      color: var(--muted);
-      margin-bottom: 28px;
-      line-height: 1.5;
-    }
-
-    .wallet-option {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 16px;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      transition: border-color .2s, background .2s;
-      margin-bottom: 10px;
-      background: transparent;
-      width: 100%;
-      text-align: left;
-      color: var(--text);
-    }
-    .wallet-option:hover {
-      border-color: var(--accent);
-      background: rgba(200,255,0,.04);
-    }
-    .wallet-icon {
-      width: 40px; height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
-    }
-    .wallet-name {
-      font-family: 'Space Mono', monospace;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: .06em;
-    }
-    .wallet-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .wallet-option.recommended {
-      border-color: var(--accent);
-      background: rgba(200,255,0,.06);
-    }
-    .wallet-paste-input {
-      width: 100%;
-      padding: 12px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      outline: none;
-      margin-top: 8px;
-    }
-    .wallet-paste-input:focus { border-color: var(--accent); }
-    .wallet-paste-input::placeholder { color: var(--muted); }
-    .wallet-paste-submit {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      background: var(--accent);
-      color: #07070d;
-      border: none;
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      cursor: pointer;
-    }
-    .wallet-paste-submit:hover { background: #d9ff26; }
-
-    /* ── CLAIM BUTTON ── */
-    #claimBtn {
-      width: 100%;
-      padding: 16px;
-      margin-top: 20px;
-      background: var(--gold);
-      color: #07070d;
-      border: none;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px;
-      letter-spacing: .15em;
-      cursor: pointer;
-      transition: background .2s, transform .1s, box-shadow .2s;
-    }
-    #claimBtn:hover { background: #ffe680; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,216,77,.3); }
-    #claimBtn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
-    .claim-status {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      color: var(--muted);
-      text-align: center;
-      margin-top: 8px;
-    }
-
-    .modal-close {
-      position: absolute;
-      top: 16px; right: 16px;
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 22px;
-      cursor: pointer;
-      padding: 4px 8px;
-      transition: color .2s;
-    }
-    .modal-close:hover { color: var(--text); }
-    .modal { position: relative; }
-
-    /* ── TOAST ── */
-    #toastContainer {
-      position: fixed;
-      bottom: 32px; right: 24px;
-      z-index: 300;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: flex-end;
-    }
-    .toast {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      padding: 12px 18px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      max-width: 340px;
-      animation: slideIn .3s ease;
-      letter-spacing: .04em;
-    }
-    .toast.success { border-color: var(--accent); color: var(--accent); }
-    .toast.error   { border-color: var(--accent2); color: var(--accent2); }
-    .toast.info    { border-color: var(--accent3); color: var(--accent3); }
-    @keyframes slideIn {
-      from { transform: translateX(30px); opacity: 0; }
-      to   { transform: translateX(0); opacity: 1; }
-    }
-
-    /* ── WIN MODAL ── */
-    .win-modal .modal {
-      text-align: center;
-      border-color: var(--gold);
-    }
-    .win-trophy {
-      font-size: 64px;
-      display: block;
-      margin-bottom: 16px;
-      animation: bounce 1s ease infinite alternate;
-    }
-    @keyframes bounce {
-      from { transform: translateY(0); }
-      to   { transform: translateY(-12px); }
-    }
-    .win-amount {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 56px;
-      color: var(--gold);
-      letter-spacing: .04em;
-    }
-
-    /* ── STATUS BAR ── */
-    #statusBar {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      color: var(--muted);
-      text-align: center;
-      padding: 8px;
-      letter-spacing: .06em;
-      border-top: 1px solid var(--border);
-      margin-top: 8px;
-    }
-
-    /* ── FOOTER ── */
-    footer {
-      position: relative;
-      z-index: 1;
-      border-top: 1px solid var(--border);
-      padding: 24px 32px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    footer p {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      color: var(--muted);
-      letter-spacing: .08em;
-    }
-    footer a {
-      color: var(--accent3);
-      text-decoration: none;
-    }
-    footer a:hover { color: var(--accent); }
-
-    /* ── ANIMATIONS ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 768px) {
-      header { padding: 0 10px; height: 50px; }
-      .logo { font-size: 20px; }
-      .header-right { gap: 6px; }
-      .net-pill { display: none; }
-      .nav-link { font-size: 9px; padding: 5px 10px; letter-spacing: .06em; }
-      #connectBtn { font-size: 9px; padding: 6px 10px; letter-spacing: .04em; }
-      .hero h1 { font-size: clamp(48px, 16vw, 80px); }
-      .hero-sub { font-size: 15px; padding: 0 8px; }
-      .stats-row { grid-template-columns: 1fr 1fr; }
-      .stat-val { font-size: 28px; }
-      .stat-label { font-size: 9px; }
-      .stat-box { padding: 16px 12px; }
-      .two-col { grid-template-columns: 1fr; }
-      main { padding: 32px 12px 80px; }
-      .panel { padding: 20px 16px; }
-      .full-panel { padding: 20px 16px; }
-      .price-big { font-size: 36px; }
-      .pool-amount { font-size: 40px; }
-      .countdown .cd-num { font-size: 32px; }
-      .countdown .cd-sep { font-size: 32px; }
-      .modal { padding: 28px 20px; max-width: calc(100% - 24px); }
-      .win-amount { font-size: 40px; }
-      .win-trophy { font-size: 48px; }
-      #claimBtn { font-size: 18px; padding: 14px; }
-      #toastContainer { bottom: 16px; right: 12px; left: 12px; align-items: stretch; }
-      .toast { max-width: 100%; font-size: 11px; }
-      footer { flex-direction: column; gap: 8px; text-align: center; padding: 16px; }
-      .player-addr { font-size: 11px; }
-      .players-grid { font-size: 12px; }
-      .winner-card { flex-direction: column; align-items: flex-start; gap: 8px; }
-      .winner-left { gap: 10px; }
-      .winner-amount { font-size: 22px; }
-    }
-
-    @media (max-width: 380px) {
-      header { padding: 0 8px; height: 46px; }
-      .logo { font-size: 16px; letter-spacing: .06em; }
-      .header-right { gap: 4px; }
-      .nav-link { font-size: 8px; padding: 4px 8px; letter-spacing: .04em; }
-      #connectBtn { font-size: 8px; padding: 4px 8px; letter-spacing: .02em; }
-      .hero h1 { font-size: clamp(40px, 14vw, 60px); }
-      .hero-label { font-size: 9px; }
-      .hero-sub { font-size: 13px; }
-      main { padding: 24px 8px 60px; }
-      .panel { padding: 16px 12px; }
-      .full-panel { padding: 16px 12px; }
-      .modal { padding: 20px 16px; }
-      .modal-title { font-size: 22px; }
-      .modal-sub { font-size: 12px; }
-      .wallet-option { padding: 12px; gap: 10px; }
-      .wallet-icon { width: 32px; height: 32px; font-size: 18px; }
-      .wallet-name { font-size: 11px; }
-      .wallet-desc { font-size: 10px; }
-      .qty-btn { width: 38px; height: 38px; font-size: 18px; }
-      #ticketCount { font-size: 18px; }
-      .countdown .cd-num { font-size: 26px; }
-      .countdown .cd-sep { font-size: 26px; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation: none !important; transition: none !important; }
-    }
-
-    /* ── SKIP LINK ── */
-    .skip-link {
-      position: absolute;
-      top: -40px; left: 0;
-      background: var(--accent);
-      color: #07070d;
-      padding: 8px 16px;
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      text-decoration: none;
-      z-index: 999;
-    }
-    .skip-link:focus { top: 0; }
-  </style>
+/* RESPONSIVE */
+@media(max-width:480px){
+  header{padding:12px 12px}
+  .logo{font-size:18px}
+  .header-right{gap:6px}
+  .nav-link{font-size:9px;padding:4px 8px}
+  .net-badge{display:none}
+  #connectBtn{font-size:10px;padding:6px 10px}
+  .container{padding:12px}
+  .card{padding:18px 16px;border-radius:12px}
+  .timer-val{font-size:36px}
+  .prize-val{font-size:28px}
+  .split{flex-direction:column;gap:4px;text-align:center}
+  .qty-btn{width:38px;height:38px;font-size:18px}
+  .qty-input{font-size:20px;height:38px}
+  #buyBtn{font-size:16px;padding:14px}
+  .modal-box{padding:20px}
+  .win-amount{font-size:32px}
+}
+</style>
 </head>
 <body>
 
-<a href="#main-content" class="skip-link">Skip to content</a>
+<div class="ticker">◆ XERIS.FUN — ON-CHAIN LOTTERY ◆ 10 XRS / TICKET ◆ 95% TO WINNER ◆ POWERED BY XERIS CHAIN ◆</div>
 
-
-<!-- HEADER -->
-<header role="banner">
-  <a href="#" class="logo" aria-label="Solprize home">SOL<span>PRIZE</span></a>
+<header>
+  <a href="/" class="logo">XERIS<span>.</span>FUN</a>
   <div class="header-right">
     <a href="/casino" class="nav-link">CASINO</a>
-    <span class="net-pill" id="netPill">⬡ XERIS TESTNET</span>
-    <button id="connectBtn" aria-haspopup="dialog">CONNECT WALLET</button>
+    <span class="net-badge" id="netPill">◉ TESTNET</span>
+    <button id="connectBtn">CONNECT</button>
   </div>
 </header>
 
-<!-- MAIN -->
-<main id="main-content">
+<div class="container">
 
-  <!-- HERO -->
-  <section class="hero" aria-label="Hero">
-    <p class="hero-label">⬡ On-Chain Lottery · Xeris Blockchain · Testnet</p>
-    <h1>WIN<br>BIG<br>XRS</h1>
-    <p class="hero-sub">
-      Buy tickets with <strong>XRS</strong>. One winner takes the entire prize pool every draw.
-      Transparent. On-chain. No house games.
-    </p>
-  </section>
-
-  <!-- STATS -->
-  <section class="stats-row" aria-label="Network statistics">
-    <div class="stat-box">
-      <div class="stat-label">Prize Pool</div>
-      <div class="stat-val gold" id="statPool">0.00</div>
+  <!-- ROUND + TIMER -->
+  <div class="card">
+    <div class="card-title">ROUND #<span id="roundNum">-</span></div>
+    <div class="timer">
+      <div class="timer-val" id="timerVal">--:--</div>
+      <div class="timer-label">UNTIL DRAW</div>
     </div>
-    <div class="stat-box">
-      <div class="stat-label">Tickets Sold</div>
-      <div class="stat-val green" id="statTickets">0</div>
+    <div class="prize-pool">
+      <div class="prize-label">PRIZE POOL</div>
+      <div class="prize-val"><span id="prizePool">0.00</span> XRS</div>
+      <div class="split">
+        <div>Winner gets <span id="winnerSplit">0.00</span> XRS (95%)</div>
+        <div>Treasury <span id="treasurySplit">0.00</span> XRS (5%)</div>
+      </div>
     </div>
-    <div class="stat-box">
-      <div class="stat-label">Players</div>
-      <div class="stat-val cyan" id="statPlayers">0</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Round</div>
-      <div class="stat-val pink" id="statRound">#1</div>
-    </div>
-  </section>
-
-  <!-- TWO COLUMN -->
-  <div class="two-col">
-
-    <!-- BUY PANEL -->
-    <div class="panel" aria-label="Buy tickets">
-      <div class="panel-title">
-        <div class="dot"></div>
-        BUY TICKETS
-      </div>
-      <div class="ticket-price-row">
-        <span class="price-big">0.01</span>
-        <span class="price-unit">XRS / ticket</span>
-      </div>
-      <div class="qty-row" role="group" aria-label="Ticket quantity">
-        <button class="qty-btn" id="qtyMinus" aria-label="Decrease quantity">−</button>
-        <input type="number" id="ticketCount" value="1" min="1" max="100" aria-label="Number of tickets" />
-        <button class="qty-btn" id="qtyPlus" aria-label="Increase quantity">+</button>
-      </div>
-      <div class="total-row">
-        <span class="total-label">Total Cost</span>
-        <span class="total-amount" id="totalCost">0.01 XRS</span>
-      </div>
-      <button id="buyBtn" disabled aria-label="Buy tickets">
-        CONNECT WALLET FIRST
-      </button>
-      <a href="#" id="faucetLink" class="faucet-link" aria-label="Get free testnet XRS from faucet">
-        ↗ Need XRS? Get from testnet faucet
-      </a>
-      <div id="statusBar" role="status" aria-live="polite"></div>
-    </div>
-
-    <!-- POOL PANEL -->
-    <div class="panel" aria-label="Prize pool information">
-      <div class="panel-title">
-        <div class="dot" style="background:var(--gold)"></div>
-        PRIZE POOL
-      </div>
-      <div class="pool-visual" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="poolBar">
-        <div class="pool-fill" id="poolFill"></div>
-      </div>
-      <div class="pool-amount" id="poolAmount">0.00</div>
-      <div class="pool-unit">XRS · CURRENT ROUND</div>
-      <div class="countdown-label">NEXT DRAW IN</div>
-      <div class="countdown" aria-label="Countdown to next draw">
-        <div class="cd-unit">
-          <span class="cd-num" id="cdH">00</span>
-          <span class="cd-label">HRS</span>
-        </div>
-        <span class="cd-sep">:</span>
-        <div class="cd-unit">
-          <span class="cd-num" id="cdM">00</span>
-          <span class="cd-label">MIN</span>
-        </div>
-        <span class="cd-sep">:</span>
-        <div class="cd-unit">
-          <span class="cd-num" id="cdS">00</span>
-          <span class="cd-label">SEC</span>
-        </div>
-      </div>
+    <div class="round-info">
+      <span id="playerCount">0</span> players · <span id="ticketCount2">0</span> tickets sold
     </div>
   </div>
 
-  <!-- PLAYERS TABLE -->
-  <div class="full-panel" aria-label="Current round players">
-    <div class="panel-title">
-      <div class="dot" style="background:var(--accent3)"></div>
-      CURRENT PLAYERS
+  <!-- BUY TICKETS -->
+  <div class="card">
+    <div class="card-title">BUY TICKETS</div>
+    <div class="ticket-row">
+      <button class="qty-btn" id="qtyMinus">−</button>
+      <input id="ticketCount" class="qty-input" type="number" value="1" min="1" max="100" readonly />
+      <button class="qty-btn" id="qtyPlus">+</button>
     </div>
-    <div id="playersContainer">
-      <div class="empty-state">— NO PLAYERS YET · BE THE FIRST —</div>
+    <div class="price-tag">Total: <span id="totalCost">10 XRS</span> · 10 XRS/ticket</div>
+    <button id="buyBtn" disabled>CONNECT WALLET FIRST</button>
+    <a href="#" id="faucetLink" class="faucet-link">↗ Need XRS? Get from testnet faucet</a>
+    <div class="status-bar" id="statusBar"></div>
+  </div>
+
+  <!-- PLAYERS -->
+  <div class="card">
+    <div class="card-title">CURRENT PLAYERS</div>
+    <div class="players-list" id="playersContainer">
+      <div class="empty-state">No players yet — be first!</div>
     </div>
   </div>
 
   <!-- WINNERS -->
-  <div class="full-panel" aria-label="Past winners">
-    <div class="panel-title">
-      <div class="dot" style="background:var(--gold)"></div>
-      PAST WINNERS
-    </div>
-    <div id="winnersContainer">
-      <div class="empty-state">— NO DRAWS YET · FIRST WINNER COMING SOON —</div>
+  <div class="card">
+    <div class="card-title">RECENT WINNERS</div>
+    <div class="winners-list" id="winnersContainer">
+      <div class="empty-state">No winners yet</div>
     </div>
   </div>
 
-</main>
+</div>
 
-<footer role="contentinfo">
-  <p>SOLPRIZE · POWERED BY <a href="https://xerisweb.com" target="_blank" rel="noopener">XERIS CHAIN</a></p>
-  <p>TESTNET DEMO · NOT REAL FUNDS · <a href="https://github.com/ZZachWWins/xeriscoin" target="_blank" rel="noopener">GITHUB</a></p>
-</footer>
+<!-- TOAST CONTAINER -->
+<div id="toastContainer"></div>
 
-<!-- CONNECT MODAL -->
-<div class="modal-overlay" id="connectModal" role="dialog" aria-modal="true" aria-labelledby="connectModalTitle">
-  <div class="modal">
-    <button class="modal-close" id="connectModalClose" aria-label="Close">✕</button>
-    <div class="modal-title" id="connectModalTitle">CONNECT WALLET</div>
-    <p class="modal-sub">Connect your wallet to buy tickets and participate in the Xeris lottery.</p>
+<!-- WALLET CONNECT MODAL -->
+<div class="modal-overlay" id="connectModal">
+  <div class="modal-box">
+    <button class="modal-close" id="connectModalClose">✕</button>
+    <div class="modal-title">CONNECT WALLET</div>
 
-    <button class="wallet-option recommended" id="xerisWalletBtn" aria-label="Connect with Xeris Wallet" style="display:none">
-      <div class="wallet-icon">⬡</div>
+    <div class="wallet-option" id="xerisWalletBtn">
+      <div class="wallet-icon" style="background:#adff2f;color:#000">⬡</div>
       <div>
-        <div class="wallet-name">XERIS WALLET</div>
-        <div class="wallet-desc">Sign transactions in Xeris Wallet Browser</div>
+        <div class="wallet-name">Xeris Wallet</div>
+        <div class="wallet-desc">Sign transactions directly</div>
       </div>
-    </button>
-
-    <button class="wallet-option" id="pasteBtn" aria-label="Paste wallet address">
-      <div class="wallet-icon">📋</div>
-      <div>
-        <div class="wallet-name">PASTE ADDRESS</div>
-        <div class="wallet-desc">Enter your Xeris wallet address manually</div>
-      </div>
-    </button>
-    <div id="pasteSection" style="display:none">
-      <input type="text" class="wallet-paste-input" id="pasteAddrInput" placeholder="Enter your Xeris wallet address..." maxlength="64" />
-      <button class="wallet-paste-submit" id="pasteAddrSubmit">CONNECT</button>
     </div>
 
-    <button class="wallet-option" id="demoBtn" aria-label="Use demo wallet">
-      <div class="wallet-icon">🧪</div>
+    <div class="wallet-option" id="pasteBtn">
+      <div class="wallet-icon" style="background:#1a1a2e;color:#adff2f;border:1px solid #333">📋</div>
       <div>
-        <div class="wallet-name">DEMO WALLET</div>
-        <div class="wallet-desc">Generate a random testnet address (no signing)</div>
+        <div class="wallet-name">Paste Address</div>
+        <div class="wallet-desc">View only — no signing</div>
       </div>
-    </button>
+    </div>
+
+    <div class="paste-section" id="pasteSection">
+      <input class="paste-input" id="pasteAddrInput" placeholder="Paste your XRS address..." autocomplete="off" />
+      <button class="paste-submit" id="pasteAddrSubmit">CONNECT ADDRESS</button>
+    </div>
+
+    <div class="wallet-option" id="demoBtn">
+      <div class="wallet-icon" style="background:#1a1a2e;color:#ff2d78;border:1px solid #333">🎲</div>
+      <div>
+        <div class="wallet-name">Demo Wallet</div>
+        <div class="wallet-desc">Try with a random address</div>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- WIN MODAL -->
-<div class="modal-overlay win-modal" id="winModal" role="dialog" aria-modal="true" aria-labelledby="winModalTitle">
-  <div class="modal">
-    <button class="modal-close" id="winModalClose" aria-label="Close">✕</button>
-    <span class="win-trophy" role="img" aria-label="Trophy">🏆</span>
-    <div class="modal-title" id="winModalTitle">YOU WON!</div>
-    <p class="modal-sub">Congratulations — you've won this round's prize pool. Sign a claim transaction to receive your prize.</p>
-    <div class="win-amount" id="winAmount">0.00 XRS</div>
-    <button id="claimBtn">CLAIM PRIZE</button>
+<div class="modal-overlay" id="winModal">
+  <div class="modal-box" style="text-align:center;border-color:#ff2d78">
+    <button class="modal-close" id="winModalClose">✕</button>
+    <div style="font-size:48px;margin-bottom:8px">🏆</div>
+    <div class="modal-title" style="color:#ff2d78;text-align:center">YOU WON!</div>
+    <div class="win-amount" id="winAmount">0 XRS</div>
+    <div class="win-sub">Prize from the lottery pool</div>
+    <button id="claimBtn" disabled>CLAIM PRIZE</button>
     <div class="claim-status" id="claimStatus"></div>
   </div>
 </div>
 
-<!-- TOAST CONTAINER -->
-<div id="toastContainer" role="status" aria-live="polite" aria-atomic="true"></div>
-
-
-<!-- ─────────────────── SCRIPTS ─────────────────── -->
 <script>
-
 // ══════════════════════════════════════════════
-//  CONFIG — edit these for your deployment
+//  CONFIG
 // ══════════════════════════════════════════════
 const CONFIG = Object.freeze({
   TREASURY:       '6G4GroMrVsGjd3xhywxfzXDg7vPn1V2Mky4B3qsXVGHo',
-  TICKET_PRICE:   10,                                 // XRS per ticket
+  TICKET_PRICE:   10,
   MAX_TICKETS:    100,
-  // All requests go through backend proxy (CORS-safe)
-  API_BASE:       '',                                // relative URLs
+  API_BASE:       '',
   NETWORK:        'xeris-testnet',
   CURRENCY:       'XRS',
   LAMPORTS:       1_000_000_000,
@@ -1036,13 +264,13 @@ const CONFIG = Object.freeze({
 //  STATE
 // ══════════════════════════════════════════════
 const state = {
-  wallet: null,           // { address, type: 'xeris'|'paste'|'demo' }
+  wallet: null,
   balance: 0,
   isBuying: false,
   isClaiming: false,
-  players: [],            // [{ address, tickets }] — from server
-  winners: [],            // [{ address, amount, round, claimed }] — from server
-  pendingClaim: null,     // { address, amount, round } — current unclaimed win
+  players: [],
+  winners: [],
+  pendingClaim: null,
   round: 1,
   drawTarget: Date.now() + 300_000,
 };
@@ -1051,32 +279,24 @@ const state = {
 //  UTILITIES
 // ══════════════════════════════════════════════
 function esc(str) {
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-    .replace(/'/g,'&#x27;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
 function clampInt(val, min, max) {
   const n = parseInt(val, 10);
   if (isNaN(n)) return min;
   return Math.min(max, Math.max(min, n));
 }
-
 function shortAddr(addr) {
   if (!addr || addr.length < 12) return addr;
-  return addr.slice(0,6) + '…' + addr.slice(-4);
+  return addr.slice(0,6) + '...' + addr.slice(-4);
 }
-
 function toast(msg, type = 'info', duration = 4000) {
   const el = document.createElement('div');
-  el.className = `toast ${type}`;
+  el.className = 'toast ' + type;
   el.textContent = msg;
-  el.setAttribute('role','status');
   document.getElementById('toastContainer').appendChild(el);
   setTimeout(() => el.remove(), duration);
 }
-
 function setStatus(msg) {
   document.getElementById('statusBar').textContent = msg;
 }
@@ -1085,7 +305,6 @@ function setStatus(msg) {
 //  XERIS TRANSACTION BUILDER (xeris-tx inline)
 // ══════════════════════════════════════════════
 const XerisTx = (() => {
-  // -- Bincode primitives --
   function u8(v) { return new Uint8Array([v & 0xff]); }
   function u32LE(v) {
     const b = new Uint8Array(4);
@@ -1111,8 +330,6 @@ const XerisTx = (() => {
     for (const a of arrays) { r.set(a, off); off += a.length; }
     return r;
   }
-
-  // -- Base58 --
   const B58_ALPHA = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
   function base58Decode(str) {
     const bytes = [];
@@ -1120,11 +337,7 @@ const XerisTx = (() => {
       const idx = B58_ALPHA.indexOf(c);
       if (idx < 0) throw new Error('Invalid base58 character: ' + c);
       let carry = idx;
-      for (let j = 0; j < bytes.length; j++) {
-        carry += bytes[j] * 58;
-        bytes[j] = carry & 0xff;
-        carry >>= 8;
-      }
+      for (let j = 0; j < bytes.length; j++) { carry += bytes[j] * 58; bytes[j] = carry & 0xff; carry >>= 8; }
       while (carry > 0) { bytes.push(carry & 0xff); carry >>= 8; }
     }
     for (const c of str) { if (c === '1') bytes.push(0); else break; }
@@ -1144,8 +357,6 @@ const XerisTx = (() => {
     padded.set(raw, 32 - raw.length);
     return padded;
   }
-
-  // -- Base64 --
   function toBase64(bytes) {
     let bin = '';
     for (const b of bytes) bin += String.fromCharCode(b);
@@ -1157,16 +368,9 @@ const XerisTx = (() => {
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return bytes;
   }
-
-  // -- Instruction encoders --
   function encodeNativeTransfer(from, to, amount) {
     return concat([u32LE(11), encodeString(from), encodeString(to), u64LE(amount)]);
   }
-  function encodeContractCall(contractId, method, argsBytes) {
-    return concat([u32LE(4), encodeString(contractId), encodeString(method), u64LE(argsBytes.length), argsBytes]);
-  }
-
-  // -- Solana compact-u16 --
   function encodeCompactU16(value) {
     const out = [];
     let v = value;
@@ -1174,45 +378,25 @@ const XerisTx = (() => {
     out.push(v & 0x7f);
     return new Uint8Array(out);
   }
-
-  // -- Solana legacy message --
   function buildMessage(signerPubkey, instructionData, blockhash) {
-    const programId = new Uint8Array(32); // all zeros
+    const programId = new Uint8Array(32);
     return concat([
-      new Uint8Array([1, 0, 1]),       // header: 1 sig, 0 readonly signed, 1 readonly unsigned
-      encodeCompactU16(2),             // 2 accounts
-      signerPubkey,                    // account[0] = signer
-      programId,                       // account[1] = program id
-      blockhash,                       // 32 bytes
-      encodeCompactU16(1),             // 1 instruction
-      new Uint8Array([1]),             // program_id_index = 1
-      encodeCompactU16(1),             // 1 account reference
-      new Uint8Array([0]),             // account_index = 0 (signer)
-      encodeCompactU16(instructionData.length),
-      instructionData,
+      new Uint8Array([1, 0, 1]), encodeCompactU16(2), signerPubkey, programId, blockhash,
+      encodeCompactU16(1), new Uint8Array([1]), encodeCompactU16(1), new Uint8Array([0]),
+      encodeCompactU16(instructionData.length), instructionData,
     ]);
   }
-
-  // -- Unsigned tx (for wallet signing) --
   function buildUnsignedTx(messageBytes) {
-    const numSigs = encodeCompactU16(1);
-    const emptySig = new Uint8Array(64);
-    return concat([numSigs, emptySig, messageBytes]);
+    return concat([encodeCompactU16(1), new Uint8Array(64), messageBytes]);
   }
-
-  // -- Extract signature from wallet response --
   function extractSignature(walletResult) {
-    if (walletResult && typeof walletResult === 'object'
-        && !ArrayBuffer.isView(walletResult) && !Array.isArray(walletResult)) {
+    if (walletResult && typeof walletResult === 'object' && !ArrayBuffer.isView(walletResult) && !Array.isArray(walletResult)) {
       if (walletResult.signature) {
-        const sig = walletResult.signature instanceof Uint8Array
-          ? walletResult.signature : new Uint8Array(walletResult.signature);
+        const sig = walletResult.signature instanceof Uint8Array ? walletResult.signature : new Uint8Array(walletResult.signature);
         if (sig.length === 64) return sig;
       }
       if (walletResult.signedTransaction) {
-        const txBytes = typeof walletResult.signedTransaction === 'string'
-          ? fromBase64(walletResult.signedTransaction)
-          : new Uint8Array(walletResult.signedTransaction);
+        const txBytes = typeof walletResult.signedTransaction === 'string' ? fromBase64(walletResult.signedTransaction) : new Uint8Array(walletResult.signedTransaction);
         return extractSigFromTxBytes(txBytes);
       }
     }
@@ -1224,8 +408,7 @@ const XerisTx = (() => {
   }
   function extractSigFromTxBytes(bytes) {
     if (bytes[0] === 1) {
-      const isBincode = bytes[1]===0 && bytes[2]===0 && bytes[3]===0
-                      && bytes[4]===0 && bytes[5]===0 && bytes[6]===0 && bytes[7]===0;
+      const isBincode = bytes[1]===0&&bytes[2]===0&&bytes[3]===0&&bytes[4]===0&&bytes[5]===0&&bytes[6]===0&&bytes[7]===0;
       if (isBincode && bytes.length >= 72) return bytes.slice(8, 72);
       return bytes.slice(1, 65);
     }
@@ -1236,50 +419,31 @@ const XerisTx = (() => {
     if (count >= 1 && offset + 64 <= bytes.length) return bytes.slice(offset, offset + 64);
     throw new Error('Could not extract signature');
   }
-
-  // -- Assemble signed tx --
   function assembleSignedTx(signature, messageBytes) {
     if (signature.length !== 64) throw new Error('Signature must be 64 bytes');
     return concat([encodeCompactU16(1), signature, messageBytes]);
   }
-
-  // -- Full pipeline: sign + submit --
   function resolveSignedTx(walletResult, messageBytes) {
     const sig = extractSignature(walletResult);
-    const signedTx = assembleSignedTx(sig, messageBytes);
-    return toBase64(signedTx);
+    return toBase64(assembleSignedTx(sig, messageBytes));
   }
-
-  // -- Fetch blockhash via backend proxy --
   async function fetchRecentBlockhash() {
     const r = await fetch(CONFIG.API_BASE + '/api/xeris/blockhash');
     const data = await r.json();
     if (data.error) throw new Error(data.error);
-
     if (data.format === 'hex' && typeof data.blockhash === 'string') {
       const bytes = new Uint8Array(32);
       for (let i = 0; i < 32; i++) bytes[i] = parseInt(data.blockhash.substr(i * 2, 2), 16);
       return bytes;
     }
-    if (Array.isArray(data.blockhash) && data.blockhash.length === 32) {
-      return new Uint8Array(data.blockhash);
-    }
+    if (Array.isArray(data.blockhash) && data.blockhash.length === 32) return new Uint8Array(data.blockhash);
     throw new Error('Unexpected blockhash format');
   }
-
-  return {
-    concat, u8, u32LE, u64LE, encodeString,
-    base58Decode, base58Encode, base58DecodePubkey,
-    toBase64, fromBase64,
-    encodeNativeTransfer, encodeContractCall,
-    encodeCompactU16, buildMessage, buildUnsignedTx,
-    extractSignature, assembleSignedTx, resolveSignedTx,
-    fetchRecentBlockhash,
-  };
+  return { concat, u8, u32LE, u64LE, encodeString, base58Decode, base58Encode, base58DecodePubkey, toBase64, fromBase64, encodeNativeTransfer, encodeCompactU16, buildMessage, buildUnsignedTx, extractSignature, assembleSignedTx, resolveSignedTx, fetchRecentBlockhash };
 })();
 
 // ══════════════════════════════════════════════
-//  API CLIENT (all through backend proxy)
+//  API CLIENT
 // ══════════════════════════════════════════════
 async function fetchBalance(address) {
   try {
@@ -1291,14 +455,6 @@ async function fetchBalance(address) {
   } catch {}
   return 0;
 }
-
-async function fetchNetworkStats() {
-  try {
-    const r = await fetch(`${CONFIG.API_BASE}/api/xeris/stats`);
-    return await r.json();
-  } catch { return null; }
-}
-
 async function fetchLotteryStatus() {
   try {
     const r = await fetch(`${CONFIG.API_BASE}/api/lottery/status`);
@@ -1316,31 +472,17 @@ async function requestFaucet(address) {
   setStatus(`Requesting ${amount} XRS from faucet…`);
   try {
     const res = await fetch(`${CONFIG.API_BASE}/api/xeris/faucet/${encodeURIComponent(address)}/${amount}`);
-    let data = {};
-    try { data = await res.json(); } catch {}
-
+    let data = {}; try { data = await res.json(); } catch {}
     const sig = data.signature || data.txid || data.id || data.tx;
-    if (sig) {
-      toast(`✓ Faucet sent ${amount} XRS! Tx: ${shortAddr(sig)}`, 'success', 7000);
-    } else if (res.ok) {
-      toast(`✓ Faucet request sent! Balance will update shortly.`, 'success');
-    } else {
-      toast(`Faucet returned: ${data.error || data.message || 'check balance in a moment'}`, 'info');
-    }
-    // Poll balance a few times to show update
+    if (sig) toast(`Faucet sent ${amount} XRS!`, 'success', 7000);
+    else if (res.ok) toast('Faucet request sent!', 'success');
+    else toast(`Faucet: ${data.error || 'check balance soon'}`, 'info');
     let tries = 0;
-    const poll = setInterval(async () => {
-      await refreshBalance();
-      if (++tries >= 5) clearInterval(poll);
-    }, 3000);
-  } catch (e) {
-    toast(`Faucet error: ${e.message}`, 'error');
-  } finally {
+    const poll = setInterval(async () => { await refreshBalance(); if (++tries >= 5) clearInterval(poll); }, 3000);
+  } catch (e) { toast('Faucet error: ' + e.message, 'error'); }
+  finally {
     setStatus('');
-    if (faucetBtn) {
-      faucetBtn.style.pointerEvents = '';
-      faucetBtn.textContent = '↗ Need XRS? Get from testnet faucet';
-    }
+    if (faucetBtn) { faucetBtn.style.pointerEvents = ''; faucetBtn.textContent = '↗ Need XRS? Get from testnet faucet'; }
   }
 }
 
@@ -1352,70 +494,51 @@ function onWalletConnected(address, type = 'demo') {
   const btn = document.getElementById('connectBtn');
   btn.textContent = shortAddr(address);
   btn.classList.add('connected');
-  btn.setAttribute('aria-label', `Connected: ${address}. Click to disconnect.`);
 
   const buyBtn = document.getElementById('buyBtn');
-  if (type === 'xeris') {
-    buyBtn.disabled = false;
-    buyBtn.textContent = 'BUY TICKETS';
-  } else if (type === 'paste') {
-    buyBtn.disabled = false;
-    buyBtn.textContent = 'BUY TICKETS (VIEW ONLY)';
-  } else {
-    buyBtn.disabled = false;
-    buyBtn.textContent = 'BUY TICKETS (DEMO)';
-  }
+  buyBtn.disabled = false;
+  if (type === 'xeris') buyBtn.textContent = 'BUY TICKETS';
+  else if (type === 'paste') buyBtn.textContent = 'BUY TICKETS (VIEW ONLY)';
+  else buyBtn.textContent = 'BUY TICKETS (DEMO)';
 
   const fl = document.getElementById('faucetLink');
   fl.href = '#';
   fl.onclick = (e) => { e.preventDefault(); requestFaucet(address); };
 
-  toast(`Wallet connected: ${shortAddr(address)}` + (type === 'xeris' ? ' (signing enabled)' : ''), 'success');
+  toast('Wallet connected: ' + shortAddr(address) + (type === 'xeris' ? ' (signing enabled)' : ''), 'success');
   closeModal('connectModal');
   refreshBalance();
 }
 
 function onWalletDisconnected() {
-  if (state.wallet?.type === 'xeris' && window.xeris) {
-    try { window.xeris.disconnect(); } catch {}
-  }
+  if (state.wallet?.type === 'xeris' && window.xeris) { try { window.xeris.disconnect(); } catch {} }
   state.wallet = null;
   state.balance = 0;
   state.pendingClaim = null;
-  const btn = document.getElementById('connectBtn');
-  btn.textContent = 'CONNECT WALLET';
-  btn.classList.remove('connected');
+  document.getElementById('connectBtn').textContent = 'CONNECT';
+  document.getElementById('connectBtn').classList.remove('connected');
   document.getElementById('buyBtn').disabled = true;
   document.getElementById('buyBtn').textContent = 'CONNECT WALLET FIRST';
   setStatus('');
   toast('Wallet disconnected', 'info');
 }
 
-function canSign() {
-  return state.wallet?.type === 'xeris' && typeof window.xeris !== 'undefined';
-}
+function canSign() { return state.wallet?.type === 'xeris' && typeof window.xeris !== 'undefined'; }
 
 async function refreshBalance() {
   if (!state.wallet) return;
   const lamports = await fetchBalance(state.wallet.address);
   state.balance = lamports;
   const xrs = (lamports / CONFIG.LAMPORTS).toFixed(4);
-  setStatus(`Balance: ${xrs} XRS`);
-  // Warn if balance too low to buy
+  setStatus('Balance: ' + xrs + ' XRS');
   const qty = clampInt(document.getElementById('ticketCount').value, 1, CONFIG.MAX_TICKETS);
   const needed = qty * CONFIG.TICKET_PRICE * CONFIG.LAMPORTS;
-  if (lamports > 0 && lamports < needed) {
-    setStatus(`Balance: ${xrs} XRS — insufficient for ${qty} ticket(s). Use faucet ↓`);
-  }
+  if (lamports > 0 && lamports < needed) setStatus('Balance: ' + xrs + ' XRS — insufficient. Use faucet ↓');
 }
 
-// ── XERIS WALLET (window.xeris from wallet browser) ──
 async function connectXerisWallet() {
   closeModal('connectModal');
-  if (typeof window.xeris === 'undefined') {
-    toast('Xeris wallet not detected — open this page in Xeris Wallet Browser', 'error');
-    return;
-  }
+  if (typeof window.xeris === 'undefined') { toast('Xeris wallet not detected — open in Xeris Wallet Browser', 'error'); return; }
   try {
     toast('Connecting to Xeris Wallet…', 'info');
     const resp = await window.xeris.connect();
@@ -1425,51 +548,31 @@ async function connectXerisWallet() {
     else if (resp?.address) address = resp.address;
     else if (window.xeris.publicKey) address = window.xeris.publicKey.toString();
     else if (window.xeris.address) address = window.xeris.address;
-
-    if (!address) throw new Error('No address returned from wallet');
+    if (!address) throw new Error('No address returned');
     onWalletConnected(address, 'xeris');
-
-    // Listen for account changes
     if (window.xeris.on) {
-      window.xeris.on('accountChanged', (newAddr) => {
-        if (newAddr) onWalletConnected(typeof newAddr === 'string' ? newAddr : newAddr.toString(), 'xeris');
-        else onWalletDisconnected();
-      });
+      window.xeris.on('accountChanged', (a) => { if (a) onWalletConnected(typeof a === 'string' ? a : a.toString(), 'xeris'); else onWalletDisconnected(); });
       window.xeris.on('disconnect', () => onWalletDisconnected());
     }
-  } catch (e) {
-    toast('Wallet connection failed: ' + e.message, 'error');
-  }
+  } catch (e) { toast('Connection failed: ' + e.message, 'error'); }
 }
 
-// ── PASTE ADDRESS ──
 function connectPasteWallet(address) {
   address = address.trim();
-  if (address.length < 20 || address.length > 64) {
-    toast('Invalid address — must be a valid Xeris base58 address', 'error');
-    return;
-  }
-  // Validate base58 chars
-  const b58re = /^[1-9A-HJ-NP-Za-km-z]+$/;
-  if (!b58re.test(address)) {
-    toast('Invalid base58 characters in address', 'error');
-    return;
-  }
+  if (address.length < 20 || address.length > 64) { toast('Invalid address', 'error'); return; }
+  if (!/^[1-9A-HJ-NP-Za-km-z]+$/.test(address)) { toast('Invalid base58 characters', 'error'); return; }
   closeModal('connectModal');
   onWalletConnected(address, 'paste');
-  toast('Address connected (view-only — no signing). Use Xeris Wallet Browser for full functionality.', 'info', 7000);
 }
 
-// ── DEMO WALLET ──
 async function connectDemoWallet() {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   const addr = XerisTx.base58Encode(bytes).slice(0, 44);
   onWalletConnected(addr, 'demo');
-  toast('Demo wallet ready — click "Get from testnet faucet" to load XRS', 'info', 7000);
+  toast('Demo wallet — use faucet to get XRS', 'info', 7000);
 }
 
-// ── AUTO-RECONNECT ──
 async function tryAutoReconnect() {
   if (typeof window.xeris === 'undefined') return;
   try {
@@ -1479,142 +582,92 @@ async function tryAutoReconnect() {
     else if (resp?.publicKey) address = resp.publicKey.toString();
     else if (resp?.address) address = resp.address;
     if (address) onWalletConnected(address, 'xeris');
-  } catch {} // not previously authorized — ignore
+  } catch {}
 }
 
 // ══════════════════════════════════════════════
-//  LOTTERY STATE (server-driven)
+//  LOTTERY STATE
 // ══════════════════════════════════════════════
-function totalTickets() {
-  return state.players.reduce((s, p) => s + p.tickets, 0);
-}
+function totalTickets() { return state.players.reduce((s, p) => s + p.tickets, 0); }
+function poolXRS() { return (totalTickets() * CONFIG.TICKET_PRICE).toFixed(4); }
 
-function poolXRS() {
-  return (totalTickets() * CONFIG.TICKET_PRICE).toFixed(4);
-}
-
-// Sync state from backend
 async function refreshLotteryState() {
   const data = await fetchLotteryStatus();
   if (!data) return;
-
   state.round = data.round;
   state.players = data.players || [];
   state.drawTarget = data.drawAt;
 
-  // Sync winners from server
   if (data.pastWinners && data.pastWinners.length > 0) {
-    const prevWinnerCount = state.winners.length;
-
-    state.winners = data.pastWinners.map(w => ({
-      address: w.address,
-      amount: w.amountXRS,
-      round: w.round,
-      claimed: w.claimed,
-    }));
-
-    // Check if there's a NEW winner that is us
-    if (state.wallet && state.winners.length > prevWinnerCount) {
+    const prevCount = state.winners.length;
+    state.winners = data.pastWinners.map(w => ({ address: w.address, amount: w.amountXRS, round: w.round, claimed: w.claimed }));
+    if (state.wallet && state.winners.length > prevCount) {
       const latest = state.winners[0];
       if (latest && latest.address === state.wallet.address && !latest.claimed) {
         state.pendingClaim = { address: latest.address, amount: latest.amount, round: latest.round };
-        document.getElementById('winAmount').textContent = `${latest.amount.toFixed(4)} XRS`;
-        const claimBtn = document.getElementById('claimBtn');
-        claimBtn.disabled = false;
-        claimBtn.textContent = 'CLAIM PRIZE';
+        document.getElementById('winAmount').textContent = latest.amount.toFixed(4) + ' XRS';
+        document.getElementById('claimBtn').disabled = false;
+        document.getElementById('claimBtn').textContent = 'CLAIM PRIZE';
         document.getElementById('claimStatus').textContent = '';
         openModal('winModal');
-        toast(`You won Round #${latest.round}! Claim your ${latest.amount.toFixed(4)} XRS prize!`, 'success', 10000);
+        toast('You won Round #' + latest.round + '!', 'success', 10000);
       }
     }
   }
-
   renderPlayers();
   renderWinners();
   updateStats();
 }
 
 // ══════════════════════════════════════════════
-//  CLAIM FLOW — Backend signs payout from treasury
+//  CLAIM FLOW
 // ══════════════════════════════════════════════
 async function handleClaim() {
-  if (!state.wallet) { toast('Connect your wallet first', 'error'); return; }
+  if (!state.wallet) { toast('Connect wallet first', 'error'); return; }
   if (state.isClaiming) return;
   if (!state.pendingClaim) { toast('No prize to claim', 'info'); return; }
-
   state.isClaiming = true;
   const claimBtn = document.getElementById('claimBtn');
   const claimStatus = document.getElementById('claimStatus');
   claimBtn.disabled = true;
   claimBtn.textContent = 'CLAIMING…';
-
-  const addr = state.wallet.address;
-  const claimRound = state.pendingClaim.round;
-  const prizeAmount = state.pendingClaim.amount;
-
   try {
     claimStatus.textContent = 'Requesting payout from treasury…';
-
-    // Backend verifies winner + signs + submits payout tx from treasury
-    const r = await fetch(`${CONFIG.API_BASE}/api/lottery/claim`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address: addr, round: claimRound }),
-    });
+    const r = await fetch(`${CONFIG.API_BASE}/api/lottery/claim`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: state.wallet.address, round: state.pendingClaim.round }) });
     const data = await r.json();
-
-    if (!r.ok || data.error) {
-      throw new Error(data.error || 'Claim failed');
-    }
-
-    // Success — treasury paid out
+    if (!r.ok || data.error) throw new Error(data.error || 'Claim failed');
     state.pendingClaim = null;
-    const winEntry = state.winners.find(w => w.round === claimRound && w.address === addr);
+    const winEntry = state.winners.find(w => w.round === data.round && w.address === state.wallet.address);
     if (winEntry) winEntry.claimed = true;
-
-    const payoutXRS = (data.amountXRS || prizeAmount).toFixed(4);
     claimBtn.textContent = 'CLAIMED!';
-    claimStatus.textContent = `${payoutXRS} XRS sent to your wallet!` +
-      (data.payoutTx ? ` Tx: ${shortAddr(data.payoutTx)}` : '');
-    toast(`Prize claimed: ${payoutXRS} XRS from Round #${claimRound}!`, 'success', 8000);
-
+    claimStatus.textContent = (data.amountXRS || 0).toFixed(4) + ' XRS sent!' + (data.payoutTx ? ' Tx: ' + shortAddr(data.payoutTx) : '');
+    toast('Prize claimed!', 'success', 8000);
     renderWinners();
     setTimeout(refreshBalance, 3000);
-
   } catch (err) {
-    console.error('[solprize] claim error:', err);
     claimBtn.disabled = false;
     claimBtn.textContent = 'CLAIM PRIZE';
-    claimStatus.textContent = 'Claim failed: ' + err.message;
+    claimStatus.textContent = 'Failed: ' + err.message;
     toast('Claim failed: ' + err.message, 'error');
-  } finally {
-    state.isClaiming = false;
-  }
+  } finally { state.isClaiming = false; }
 }
 
 // ══════════════════════════════════════════════
-//  BUY FLOW — Signed NativeTransfer via window.xeris
+//  BUY FLOW
 // ══════════════════════════════════════════════
 async function handleBuy() {
-  if (!state.wallet) { toast('Connect your wallet first', 'error'); return; }
-  if (state.isBuying) { toast('Purchase already in progress…', 'info'); return; }
-
+  if (!state.wallet) { toast('Connect wallet first', 'error'); return; }
+  if (state.isBuying) return;
   const qty = clampInt(document.getElementById('ticketCount').value, 1, CONFIG.MAX_TICKETS);
-  document.getElementById('ticketCount').value = qty;
-
   const costXRS = qty * CONFIG.TICKET_PRICE;
   const costLamports = BigInt(Math.round(costXRS * CONFIG.LAMPORTS));
 
-  // Balance check
   if (state.balance > 0 && state.balance < Number(costLamports)) {
-    toast(`Insufficient balance — need ${costXRS.toFixed(4)} XRS. Use the faucet`, 'error', 6000);
+    toast('Insufficient balance — need ' + costXRS + ' XRS', 'error', 6000);
     return;
   }
-
-  // Check if we can sign
   if (!canSign()) {
-    toast('Signing required — connect with Xeris Wallet Browser to buy tickets', 'error', 6000);
-    setStatus('Open this page in Xeris Wallet Browser to sign transactions.');
+    toast('Signing required — use Xeris Wallet Browser', 'error', 6000);
     return;
   }
 
@@ -1625,75 +678,44 @@ async function handleBuy() {
 
   try {
     const addr = state.wallet.address;
-
-    // Step 1: Encode NativeTransfer instruction (variant 11)
     setStatus('Building transaction…');
     const instructionData = XerisTx.encodeNativeTransfer(addr, CONFIG.TREASURY, costLamports);
-
-    // Step 2: Fetch recent blockhash
     setStatus('Fetching blockhash…');
     const blockhash = await XerisTx.fetchRecentBlockhash();
-
-    // Step 3: Decode signer pubkey
     const pubkeyBytes = XerisTx.base58DecodePubkey(addr);
-
-    // Step 4-5: Build message → unsigned tx
     const messageBytes = XerisTx.buildMessage(pubkeyBytes, instructionData, blockhash);
     const unsignedTx = XerisTx.buildUnsignedTx(messageBytes);
 
-    // Step 6: Sign with wallet (shows approval popup)
-    setStatus('Waiting for wallet signature…');
+    setStatus('Waiting for wallet…');
     btn.textContent = 'APPROVE IN WALLET…';
     const walletResult = await window.xeris.signTransaction(unsignedTx);
 
-    // Step 7-8: Extract signature, re-assemble signed tx
-    setStatus('Submitting transaction…');
+    setStatus('Submitting…');
     btn.textContent = 'SUBMITTING…';
     const tx_base64 = XerisTx.resolveSignedTx(walletResult, messageBytes);
-
-    // Step 9: Submit through backend proxy
-    const r = await fetch(`${CONFIG.API_BASE}/api/xeris/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tx_base64 }),
-    });
+    const r = await fetch(`${CONFIG.API_BASE}/api/xeris/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tx_base64 }) });
     const data = await r.json();
-
-    if (!r.ok || data.error) {
-      throw new Error(data.error || 'Transaction rejected by node');
-    }
-
+    if (!r.ok || data.error) throw new Error(data.error || 'Transaction rejected');
     const txSig = data.signature || data.txid || 'submitted';
 
-    // Step 10: Register tickets with backend
     setStatus('Registering tickets…');
     try {
-      const regR = await fetch(`${CONFIG.API_BASE}/api/lottery/buy`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: addr, tickets: qty, txSignature: txSig }),
-      });
+      const regR = await fetch(`${CONFIG.API_BASE}/api/lottery/buy`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: addr, tickets: qty, txSignature: txSig }) });
       const regData = await regR.json();
-      if (regData.error) console.warn('Ticket registration warning:', regData.error);
-    } catch (regErr) {
-      console.warn('Could not register tickets with backend:', regErr);
-    }
+      if (regData.error) console.warn('Registration:', regData.error);
+    } catch (e) { console.warn('Registration failed:', e); }
 
-    toast(`${qty} ticket${qty>1?'s':''} bought! Tx: ${shortAddr(txSig)}`, 'success', 7000);
-    setStatus(`${qty} ticket${qty>1?'s':''} entered. Good luck!`);
-
-    // Refresh state from backend
+    toast(qty + ' ticket' + (qty > 1 ? 's' : '') + ' bought!', 'success', 7000);
+    setStatus(qty + ' ticket' + (qty > 1 ? 's' : '') + ' entered. Good luck!');
     await refreshLotteryState();
     await refreshBalance();
-
   } catch (err) {
-    console.error('[solprize] buy error:', err);
-    if (err.message?.includes('User rejected') || err.message?.includes('cancelled')) {
-      toast('Transaction cancelled by user', 'info');
-      setStatus('Transaction cancelled.');
+    if (err.message?.includes('rejected') || err.message?.includes('cancelled')) {
+      toast('Transaction cancelled', 'info');
+      setStatus('Cancelled.');
     } else {
-      toast(`Purchase failed: ${err.message}`, 'error');
-      setStatus('Transaction failed — try again.');
+      toast('Failed: ' + err.message, 'error');
+      setStatus('Failed — try again.');
     }
   } finally {
     state.isBuying = false;
@@ -1702,171 +724,86 @@ async function handleBuy() {
   }
 }
 
-function getCountdownText() {
-  const remaining = Math.max(0, Math.floor((state.drawTarget - Date.now()) / 1000));
-  const m = Math.floor(remaining / 60);
-  const s = remaining % 60;
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
-}
-
 // ══════════════════════════════════════════════
 //  RENDERING
 // ══════════════════════════════════════════════
 function renderPlayers() {
-  const container = document.getElementById('playersContainer');
-  if (state.players.length === 0) {
-    container.innerHTML = `<div class="empty-state">— NO PLAYERS YET · BE THE FIRST —</div>`;
-    return;
-  }
-
+  const el = document.getElementById('playersContainer');
+  if (!state.players.length) { el.innerHTML = '<div class="empty-state">No players yet — be first!</div>'; return; }
   const total = totalTickets();
-  const rows = state.players
-    .slice()
-    .sort((a, b) => b.tickets - a.tickets)
-    .map((p, i) => {
-      const pct = ((p.tickets / total) * 100).toFixed(1);
-      const isMe = state.wallet && p.address === state.wallet.address;
-      return `<div class="player-row" ${isMe ? 'style="background:rgba(200,255,0,.04)"' : ''}>
-        <span class="player-addr" title="${esc(p.address)}">${isMe ? '★ ' : ''}${esc(shortAddr(p.address))}</span>
-        <span class="player-tickets">${esc(p.tickets)}</span>
-        <span class="player-pct">${esc(pct)}%</span>
-      </div>`;
-    }).join('');
-
-  container.innerHTML = `
-    <div class="players-grid">
-      <div class="pg-head">
-        <span>Address</span>
-        <span>Tickets</span>
-        <span>Win Chance</span>
-      </div>
-      ${rows}
-    </div>`;
+  el.innerHTML = state.players.slice().sort((a, b) => b.tickets - a.tickets).map(p => {
+    const pct = ((p.tickets / total) * 100).toFixed(1);
+    const isMe = state.wallet && p.address === state.wallet.address;
+    return '<div class="player-row"' + (isMe ? ' style="background:rgba(173,255,47,.06)"' : '') + '>' +
+      '<span class="player-addr">' + (isMe ? '★ ' : '') + esc(shortAddr(p.address)) + '</span>' +
+      '<span class="player-tickets">' + p.tickets + '</span>' +
+      '<span class="player-pct">' + pct + '%</span></div>';
+  }).join('');
 }
 
 function renderWinners() {
-  const container = document.getElementById('winnersContainer');
-  if (state.winners.length === 0) {
-    container.innerHTML = `<div class="empty-state">— NO DRAWS YET · FIRST WINNER COMING SOON —</div>`;
-    return;
-  }
-
-  const cards = state.winners.slice(0, 10).map((w, i) => `
-    <div class="winner-card">
-      <div class="winner-left">
-        <div class="winner-rank">${i + 1}</div>
-        <div>
-          <div class="winner-addr">${esc(shortAddr(w.address))}</div>
-          <div class="winner-round">ROUND #${esc(w.round)} ${w.claimed ? '· CLAIMED' : '· UNCLAIMED'}</div>
-        </div>
-      </div>
-      <div class="winner-amount">${esc(w.amount.toFixed(4))} XRS</div>
-    </div>`).join('');
-
-  container.innerHTML = `<div class="winners-list">${cards}</div>`;
+  const el = document.getElementById('winnersContainer');
+  if (!state.winners.length) { el.innerHTML = '<div class="empty-state">No winners yet</div>'; return; }
+  el.innerHTML = state.winners.slice(0, 10).map(w =>
+    '<div class="winner-row"><div><div class="winner-addr">' + esc(shortAddr(w.address)) + '</div>' +
+    '<div class="winner-meta">Round #' + w.round + ' · ' + (w.claimed ? 'Claimed' : 'Unclaimed') + '</div></div>' +
+    '<div class="winner-amount">+' + w.amount.toFixed(2) + ' XRS</div></div>'
+  ).join('');
 }
 
 function updateStats() {
   const pool = parseFloat(poolXRS());
-  const tickets = totalTickets();
-  const players = state.players.length;
-
-  document.getElementById('statPool').textContent = pool.toFixed(2);
-  document.getElementById('statTickets').textContent = tickets;
-  document.getElementById('statPlayers').textContent = players;
-  document.getElementById('statRound').textContent = `#${state.round}`;
-  document.getElementById('poolAmount').textContent = pool.toFixed(2);
-
-  // Pool fill bar (target = 10 XRS for visual feedback)
-  const fillPct = Math.min(100, (pool / 10) * 100);
-  document.getElementById('poolFill').style.width = fillPct + '%';
-  document.getElementById('poolBar').setAttribute('aria-valuenow', fillPct);
-
-  // Ticket cost display
+  document.getElementById('roundNum').textContent = state.round;
+  document.getElementById('playerCount').textContent = state.players.length;
+  document.getElementById('ticketCount2').textContent = totalTickets();
+  document.getElementById('prizePool').textContent = pool.toFixed(2);
+  document.getElementById('winnerSplit').textContent = (pool * 0.95).toFixed(2);
+  document.getElementById('treasurySplit').textContent = (pool * 0.05).toFixed(2);
   const qty = clampInt(document.getElementById('ticketCount').value, 1, CONFIG.MAX_TICKETS);
-  document.getElementById('totalCost').textContent =
-    (qty * CONFIG.TICKET_PRICE).toFixed(4) + ' XRS';
+  document.getElementById('totalCost').textContent = (qty * CONFIG.TICKET_PRICE) + ' XRS';
 }
 
-// ══════════════════════════════════════════════
-//  COUNTDOWN
-// ══════════════════════════════════════════════
-function updateCountdown() {
-  const remaining = Math.max(0, Math.floor((state.drawTarget - Date.now()) / 1000));
-  const h = Math.floor(remaining / 3600);
-  const m = Math.floor((remaining % 3600) / 60);
-  const s = remaining % 60;
-
-  document.getElementById('cdH').textContent = String(h).padStart(2,'0');
-  document.getElementById('cdM').textContent = String(m).padStart(2,'0');
-  document.getElementById('cdS').textContent = String(s).padStart(2,'0');
-
-  // Draw happens server-side — refresh state when timer hits zero
-  if (remaining === 0) {
-    refreshLotteryState();
-  }
+function updateTimer() {
+  const left = Math.max(0, state.drawTarget - Date.now());
+  const m = Math.floor(left / 60000);
+  const s = Math.floor((left % 60000) / 1000);
+  document.getElementById('timerVal').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  if (left === 0) refreshLotteryState();
 }
 
 // ══════════════════════════════════════════════
 //  MODALS
 // ══════════════════════════════════════════════
-function openModal(id) {
-  const el = document.getElementById(id);
-  el.classList.add('open');
-  el.querySelector('button')?.focus();
-}
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// Close on backdrop click
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) closeModal(overlay.id);
-  });
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
 });
-
-// Escape key
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id));
-  }
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id));
 });
 
 // ══════════════════════════════════════════════
 //  EVENT LISTENERS
 // ══════════════════════════════════════════════
 document.getElementById('connectBtn').addEventListener('click', () => {
-  if (state.wallet) {
-    onWalletDisconnected();
-  } else {
-    openModal('connectModal');
-  }
+  if (state.wallet) onWalletDisconnected();
+  else openModal('connectModal');
 });
-
 document.getElementById('connectModalClose').addEventListener('click', () => closeModal('connectModal'));
 document.getElementById('winModalClose').addEventListener('click', () => closeModal('winModal'));
-
 document.getElementById('xerisWalletBtn').addEventListener('click', connectXerisWallet);
 document.getElementById('pasteBtn').addEventListener('click', () => {
-  const section = document.getElementById('pasteSection');
-  section.style.display = section.style.display === 'none' ? 'block' : 'none';
-  if (section.style.display === 'block') document.getElementById('pasteAddrInput').focus();
+  const s = document.getElementById('pasteSection');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+  if (s.style.display === 'block') document.getElementById('pasteAddrInput').focus();
 });
-document.getElementById('pasteAddrSubmit').addEventListener('click', () => {
-  connectPasteWallet(document.getElementById('pasteAddrInput').value);
-});
-document.getElementById('pasteAddrInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') connectPasteWallet(e.target.value);
-});
-document.getElementById('demoBtn').addEventListener('click', () => {
-  closeModal('connectModal');
-  connectDemoWallet();
-});
-
+document.getElementById('pasteAddrSubmit').addEventListener('click', () => connectPasteWallet(document.getElementById('pasteAddrInput').value));
+document.getElementById('pasteAddrInput').addEventListener('keydown', e => { if (e.key === 'Enter') connectPasteWallet(e.target.value); });
+document.getElementById('demoBtn').addEventListener('click', () => { closeModal('connectModal'); connectDemoWallet(); });
 document.getElementById('buyBtn').addEventListener('click', handleBuy);
 document.getElementById('claimBtn').addEventListener('click', handleClaim);
-
 document.getElementById('qtyMinus').addEventListener('click', () => {
   const inp = document.getElementById('ticketCount');
   inp.value = clampInt(inp.value - 1, 1, CONFIG.MAX_TICKETS);
@@ -1880,65 +817,21 @@ document.getElementById('qtyPlus').addEventListener('click', () => {
 document.getElementById('ticketCount').addEventListener('input', () => updateStats());
 
 // ══════════════════════════════════════════════
-//  NETWORK STATS POLLING
-// ══════════════════════════════════════════════
-async function pollNetworkStats() {
-  try {
-    const stats = await fetchNetworkStats();
-    if (!stats) return;
-
-    const bh  = stats.blockHeight || stats.block_height || stats.blocks || null;
-    const tps = stats.tps || stats.currentTps || null;
-    const validators = stats.validators || stats.validatorCount || null;
-    const txCount = stats.totalTransactions || stats.transactions || null;
-
-    const spans = document.querySelectorAll('#tickerInner span');
-    if (bh        && spans[0]) spans[0].textContent = `◈ BLOCK HEIGHT: ${Number(bh).toLocaleString()}`;
-    if (tps       && spans[4]) spans[4].textContent = `⬡ LIVE TPS: ${tps}`;
-    if (validators && spans[6]) spans[6].textContent = `◈ VALIDATORS: ${validators}`;
-    if (txCount   && spans[8]) spans[8].textContent = `⬡ TOTAL TXS: ${Number(txCount).toLocaleString()}`;
-
-    // Node reachable = show green indicator
-    const pill = document.getElementById('netPill');
-    pill.textContent = '⬡ XERIS TESTNET ●';
-    pill.style.borderColor = 'rgba(200,255,0,.4)';
-    pill.style.color = '#c8ff00';
-  } catch {}
-}
-
-// ══════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════
 async function init() {
-  // Detect Xeris Wallet Browser — show/hide wallet option
   if (typeof window.xeris !== 'undefined') {
     document.getElementById('xerisWalletBtn').style.display = 'flex';
-    toast('Xeris Wallet detected — connect for signed transactions', 'info', 5000);
+    toast('Xeris Wallet detected', 'info', 3000);
   }
-
-  // Show treasury in faucet tip
-  document.getElementById('faucetLink').title = `Treasury: ${CONFIG.TREASURY}`;
-
-  // Load lottery state from backend
   await refreshLotteryState();
-
-  updateCountdown();
-
-  // Timers
-  setInterval(updateCountdown, 1000);
-  setInterval(refreshLotteryState, 10000);    // poll lottery state every 10s
+  updateTimer();
+  setInterval(updateTimer, 1000);
+  setInterval(refreshLotteryState, 10000);
   setInterval(() => { if (state.wallet) refreshBalance(); }, 15000);
-  setInterval(pollNetworkStats, 30000);
-
-  // Boot
-  pollNetworkStats();
-
-  // Auto-reconnect wallet if previously authorized
   tryAutoReconnect();
 }
-
 document.addEventListener('DOMContentLoaded', init);
 </script>
-
 </body>
 </html>
