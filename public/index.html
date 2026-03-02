@@ -403,7 +403,8 @@ footer{position:relative;z-index:5;border-top:1px solid var(--br);padding:14px 3
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.3/nacl.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bs58@4.0.1/index.js"></script>
 <script src="/js/casino.js"></script>
-<script src="/js/xeris-tx.js">
+<script src="/js/xeris-tx.js"></script>
+<script>
 async function onWalletConnected(address, method) {
   let u = DB.getUser(address);
   u.walletConnected=true; u.payoutWallet=address;
