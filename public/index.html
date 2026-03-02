@@ -23,6 +23,8 @@ nav{position:sticky;top:0;z-index:100;background:rgba(6,10,15,.9);backdrop-filte
 .logo{font-size:1.3rem;font-weight:700;letter-spacing:2px;color:var(--text);}
 .logo span{color:var(--green);}
 .nav-right{display:flex;align-items:center;gap:12px;}
+.nav-link{font-family:var(--mono);font-size:.85rem;font-weight:700;padding:8px 16px;color:var(--gold);text-decoration:none;letter-spacing:1px;border:1px solid var(--gold);border-radius:8px;transition:all .2s;}
+.nav-link:hover{background:rgba(245,200,66,.12);transform:translateY(-1px);}
 #balanceDisplay{font-family:var(--mono);font-size:.85rem;color:var(--green);background:rgba(168,255,62,.1);padding:6px 12px;border-radius:20px;display:none;}
 #connectBtn{background:var(--green);color:#000;border:none;padding:8px 18px;border-radius:8px;font-weight:700;font-size:.85rem;cursor:pointer;letter-spacing:.5px;transition:all .2s;}
 #connectBtn:hover{background:var(--green2);transform:translateY(-1px);}
@@ -179,7 +181,7 @@ select option{background:var(--bg3);}
 <nav>
   <div class="logo">XERIS<span>.PLAY</span></div>
   <div class="nav-right">
-    <a href="/" style="font-size:.78rem;color:var(--gold);text-decoration:none;letter-spacing:.5px;padding:5px 12px;border:1px solid var(--gold);border-radius:20px;transition:all .2s;white-space:nowrap;" onmouseover="this.style.background='rgba(245,200,66,.1)'" onmouseout="this.style.background='transparent'">LOTTERY</a>
+    <a href="/" class="nav-link">LOTTERY</a>
     <div id="balanceDisplay">0.0000 XRS</div>
     <button id="connectBtn" onclick="openWalletModal()">🔗 Connect Wallet</button>
   </div>
