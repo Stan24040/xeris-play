@@ -179,6 +179,7 @@ select option{background:var(--bg3);}
 <nav>
   <div class="logo">XERIS<span>.PLAY</span></div>
   <div class="nav-right">
+    <a href="/" style="font-size:.78rem;color:var(--gold);text-decoration:none;letter-spacing:.5px;padding:5px 12px;border:1px solid var(--gold);border-radius:20px;transition:all .2s;white-space:nowrap;" onmouseover="this.style.background='rgba(245,200,66,.1)'" onmouseout="this.style.background='transparent'">LOTTERY</a>
     <div id="balanceDisplay">0.0000 XRS</div>
     <button id="connectBtn" onclick="openWalletModal()">🔗 Connect Wallet</button>
   </div>
@@ -385,7 +386,6 @@ select option{background:var(--bg3);}
   <p>© 2026 XERIS.PLAY · Provably Fair · Powered by <a href="#">Xeris Blockchain</a> · 0% House Edge</p>
 </div>
 
-<script src="/js/xeris-tx.js"></script>
 <script>
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const S = {
@@ -402,9 +402,9 @@ window.addEventListener('load', async () => {
   loadStats();
   loadTreasury();
   // Try silent auto-connect via Xeris Wallet Browser
-  if (window.xeris && window.XerisTx) {
+  if (window.xeris) {
     try {
-      const addr = await XerisTx.silentConnect();
+      const addr = await window.xeris.connect();
       if (addr) await onConnected(addr);
     } catch(e) {}
   }
@@ -439,9 +439,8 @@ async function loadTreasury() {
 
 // ─── WALLET ───────────────────────────────────────────────────────────────────
 function openWalletModal() {
-  if (window.xeris && window.XerisTx) {
-    // Try Xeris Wallet Browser first
-    XerisTx.connectWallet().then(addr => onConnected(addr)).catch(() => {
+  if (window.xeris) {
+    window.xeris.connect().then(addr => { if (addr) onConnected(addr); else throw 'no addr'; }).catch(() => {
       document.getElementById('walletModal').style.display = 'flex';
     });
     return;
@@ -545,23 +544,7 @@ async function placeBet() {
   hideResult();
 
   try {
-    // Get treasury address for the bet tx
-    const treasuryEl = document.getElementById('treasuryAddr');
-    const treasury = treasuryEl.textContent.trim();
-
-    // Sign and submit on-chain transfer to treasury
-    let betTxSignature = '';
-    if (window.xeris && window.XerisTx && treasury && treasury.length > 20) {
-      toast('Signing bet transaction...', 'info');
-      try {
-        const result = await XerisTx.sendXRS(S.address, treasury, amount);
-        betTxSignature = result.signature || '';
-      } catch(e) {
-        console.warn('On-chain bet tx failed, proceeding off-chain:', e.message);
-      }
-    }
-
-    // POST to /api/bet
+    // POST to /api/bet (uses server-side balance)
     toast('Placing bet...', 'info');
     const r = await fetch('/api/bet', {
       method: 'POST',
@@ -569,7 +552,7 @@ async function placeBet() {
       body: JSON.stringify({
         game, betType, betValue: String(betValue),
         amount, playerAddress: S.address,
-        betTxSignature: betTxSignature || ('demo_' + Date.now()),
+        betTxSignature: 'bet_' + Date.now(),
         username: S.address.slice(0,6)+'...'+S.address.slice(-4)
       })
     });

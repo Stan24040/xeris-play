@@ -164,6 +164,117 @@ async function submitToNode(txBase64) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+//  CASINO STATE + GAME LOGIC
+// ══════════════════════════════════════════════════════════════════════════════
+const casino = {
+  balances: {},      // { address: XRS balance }
+  gamesPlayed: 0,
+  bjStates: {},      // { seed: { playerHand, dealerHand, deck, betAmount } }
+};
+
+const RED_NUMS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+
+function resolveDice(betType, betValue) {
+  const roll = Math.floor(Math.random() * 100) + 1;
+  const target = parseInt(betValue) || 50;
+  let won = false, multiplier = 1;
+  if (betType === 'exact') { won = roll === target; multiplier = 99; }
+  else if (betType === 'over') { won = roll > target; multiplier = +(99 / Math.max(1, 100 - target)).toFixed(2); }
+  else { won = roll < target; multiplier = +(99 / Math.max(1, target - 1)).toFixed(2); }
+  return { result: { roll }, won, multiplier: won ? multiplier : 0 };
+}
+
+function resolveCrash(target) {
+  const r = Math.random();
+  const crashPoint = Math.max(1.00, +(1 / (1 - r * 0.99)).toFixed(2));
+  const t = parseFloat(target) || 2.00;
+  const won = crashPoint >= t;
+  return { result: { crashPoint }, won, multiplier: won ? t : 0 };
+}
+
+function resolveRoulette(betType, betValue) {
+  const number = Math.floor(Math.random() * 37);
+  const color = number === 0 ? 'green' : RED_NUMS.has(number) ? 'red' : 'black';
+  let won = false, multiplier = 0;
+  switch (betType) {
+    case 'red': won = color === 'red'; multiplier = 2; break;
+    case 'black': won = color === 'black'; multiplier = 2; break;
+    case 'green': won = number === 0; multiplier = 14; break;
+    case 'even': won = number > 0 && number % 2 === 0; multiplier = 2; break;
+    case 'odd': won = number % 2 === 1; multiplier = 2; break;
+    case 'number': won = number === parseInt(betValue); multiplier = 35; break;
+  }
+  return { result: { number, color }, won, multiplier: won ? multiplier : 0 };
+}
+
+function newDeck() {
+  const suits = ['H','D','C','S'], vals = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+  const deck = [];
+  for (const s of suits) for (const v of vals) deck.push(v + s);
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+}
+
+function bjHandValue(hand) {
+  let total = 0, aces = 0;
+  for (const c of hand) {
+    const v = c.slice(0, -1);
+    if (['J','Q','K'].includes(v)) total += 10;
+    else if (v === 'A') { total += 11; aces++; }
+    else total += parseInt(v);
+  }
+  while (total > 21 && aces > 0) { total -= 10; aces--; }
+  return total;
+}
+
+function resolveBlackjack(betType, existingState) {
+  if (betType === 'deal') {
+    const deck = newDeck();
+    const playerHand = [deck.pop(), deck.pop()];
+    const dealerHand = [deck.pop(), deck.pop()];
+    const pScore = bjHandValue(playerHand);
+    const dScore = bjHandValue(dealerHand);
+    if (pScore === 21 && dScore === 21)
+      return { result: { playerHand, dealerHand, playerScore: pScore, dealerScore: dScore, status: 'push' }, won: false, multiplier: 1, gameOver: true, deck };
+    if (pScore === 21)
+      return { result: { playerHand, dealerHand, playerScore: pScore, dealerScore: dScore, status: 'blackjack' }, won: true, multiplier: 2.5, gameOver: true, deck };
+    if (dScore === 21)
+      return { result: { playerHand, dealerHand, playerScore: pScore, dealerScore: dScore, status: 'dealer_blackjack' }, won: false, multiplier: 0, gameOver: true, deck };
+    return { result: { playerHand, dealerHand, playerScore: pScore, dealerScore: dScore, status: 'playing' }, won: false, multiplier: 0, gameOver: false, deck };
+  }
+  if (!existingState) return { error: 'No active game' };
+  let { playerHand, dealerHand, deck } = existingState;
+  if (betType === 'hit') {
+    playerHand.push(deck.pop());
+    const pScore = bjHandValue(playerHand);
+    if (pScore > 21)
+      return { result: { playerHand, dealerHand, playerScore: pScore, dealerScore: bjHandValue(dealerHand), status: 'bust' }, won: false, multiplier: 0, gameOver: true, deck };
+    return { result: { playerHand, dealerHand, playerScore: pScore, dealerScore: bjHandValue(dealerHand), status: 'playing' }, won: false, multiplier: 0, gameOver: false, deck };
+  }
+  // Stand or Double
+  let doubled = false;
+  if (betType === 'double') {
+    playerHand.push(deck.pop());
+    doubled = true;
+    const pScore = bjHandValue(playerHand);
+    if (pScore > 21)
+      return { result: { playerHand, dealerHand, playerScore: pScore, dealerScore: bjHandValue(dealerHand), status: 'bust' }, won: false, multiplier: 0, gameOver: true, deck, doubled };
+  }
+  while (bjHandValue(dealerHand) < 17) dealerHand.push(deck.pop());
+  const pScore = bjHandValue(playerHand);
+  const dScore = bjHandValue(dealerHand);
+  let status, won, multiplier;
+  if (dScore > 21)       { status = 'dealer_bust'; won = true;  multiplier = doubled ? 4 : 2; }
+  else if (pScore > dScore) { status = 'win';        won = true;  multiplier = doubled ? 4 : 2; }
+  else if (pScore === dScore) { status = 'push';     won = false; multiplier = 1; }
+  else                   { status = 'lose';       won = false; multiplier = 0; }
+  return { result: { playerHand, dealerHand, playerScore: pScore, dealerScore: dScore, status }, won, multiplier, gameOver: true, deck, doubled };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 //  LOTTERY STATE
 // ══════════════════════════════════════════════════════════════════════════════
 const lottery = {
@@ -300,6 +411,166 @@ app.get('/api/xeris/stats', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ── Casino API ───────────────────────────────────────────────────────────────
+
+// GET /api/stats — casino games played
+app.get('/api/stats', (req, res) => {
+  res.json({ gamesPlayed: casino.gamesPlayed });
+});
+
+// GET /api/treasury — treasury info
+app.get('/api/treasury', async (req, res) => {
+  try {
+    const r = await fetch(`${XERIS_RPC}/rpc`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getBalance', params: [TREASURY_ADDRESS] }),
+    });
+    const data = await r.json();
+    const balance = data?.result?.value ?? data?.result ?? 0;
+    res.json({ address: TREASURY_ADDRESS, balance });
+  } catch (e) {
+    res.json({ address: TREASURY_ADDRESS, balance: 0 });
+  }
+});
+
+// GET /api/balance/:address — casino credit balance
+app.get('/api/balance/:address', (req, res) => {
+  const bal = casino.balances[req.params.address] || 0;
+  res.json({ balance: bal });
+});
+
+// POST /api/deposit — credit player balance after on-chain deposit
+app.post('/api/deposit', async (req, res) => {
+  const { playerAddress, txSignature, amount } = req.body;
+  if (!playerAddress || !txSignature || !amount) {
+    return res.status(400).json({ error: 'Missing playerAddress, txSignature, or amount' });
+  }
+  const xrs = parseFloat(amount);
+  if (isNaN(xrs) || xrs < 0.01) {
+    return res.status(400).json({ error: 'Invalid amount' });
+  }
+  // 2% deposit fee
+  const credited = +(xrs * 0.98).toFixed(4);
+  casino.balances[playerAddress] = (casino.balances[playerAddress] || 0) + credited;
+  console.log(`Casino deposit: ${playerAddress.slice(0,8)}… +${credited} XRS (fee: ${(xrs - credited).toFixed(4)})`);
+  res.json({ credited, newBalance: casino.balances[playerAddress] });
+});
+
+// POST /api/bet — casino game bet resolution
+app.post('/api/bet', async (req, res) => {
+  const { game, betType, betValue, amount, playerAddress, betTxSignature } = req.body;
+  if (!game || !playerAddress) {
+    return res.status(400).json({ error: 'Missing game or playerAddress' });
+  }
+
+  const betAmount = parseFloat(amount) || 0;
+
+  // Blackjack continuation (hit/stand/double) — no extra balance needed
+  if (game === 'blackjack' && betType !== 'deal') {
+    const seed = betTxSignature;
+    const bjState = casino.bjStates[seed];
+    if (!bjState) return res.status(400).json({ error: 'No active blackjack game' });
+
+    let extraDeduct = 0;
+    if (betType === 'double') extraDeduct = bjState.betAmount;
+
+    if (extraDeduct > 0 && (casino.balances[playerAddress] || 0) < extraDeduct) {
+      return res.status(400).json({ error: 'Insufficient balance to double' });
+    }
+    if (extraDeduct > 0) casino.balances[playerAddress] -= extraDeduct;
+
+    const resolved = resolveBlackjack(betType, bjState);
+    if (resolved.error) return res.status(400).json({ error: resolved.error });
+
+    const totalBet = bjState.betAmount + extraDeduct;
+    const payout = resolved.multiplier * totalBet;
+
+    if (resolved.gameOver) {
+      if (payout > 0) casino.balances[playerAddress] = (casino.balances[playerAddress] || 0) + payout;
+      delete casino.bjStates[seed];
+      casino.gamesPlayed++;
+    } else {
+      bjState.playerHand = resolved.result.playerHand;
+      bjState.dealerHand = resolved.result.dealerHand;
+      bjState.deck = resolved.deck;
+    }
+
+    return res.json({
+      result: resolved.result,
+      payout: payout > 0 ? payout : 0,
+      payoutAmount: payout > 0 ? payout.toFixed(4) : '0',
+      betAmount: totalBet.toFixed(4),
+      betTxSignature,
+      seed,
+    });
+  }
+
+  // New bet — deduct from balance
+  if (betAmount < 0.01) return res.status(400).json({ error: 'Minimum bet is 0.01 XRS' });
+  if ((casino.balances[playerAddress] || 0) < betAmount) {
+    return res.status(400).json({ error: 'Insufficient balance. Please deposit XRS first.' });
+  }
+
+  casino.balances[playerAddress] -= betAmount;
+
+  let resolved;
+  if (game === 'dice') resolved = resolveDice(betType, betValue);
+  else if (game === 'crash') resolved = resolveCrash(betValue);
+  else if (game === 'roulette') resolved = resolveRoulette(betType, betValue);
+  else if (game === 'blackjack') {
+    resolved = resolveBlackjack('deal', null);
+    if (!resolved.gameOver) {
+      const seed = 'bj_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      casino.bjStates[seed] = {
+        playerHand: resolved.result.playerHand,
+        dealerHand: resolved.result.dealerHand,
+        deck: resolved.deck,
+        betAmount,
+      };
+      return res.json({
+        result: resolved.result,
+        payout: 0,
+        payoutAmount: '0',
+        betAmount: betAmount.toFixed(4),
+        betTxSignature,
+        seed,
+      });
+    }
+  } else {
+    casino.balances[playerAddress] += betAmount; // refund
+    return res.status(400).json({ error: 'Unknown game: ' + game });
+  }
+
+  const payout = resolved.multiplier * betAmount;
+  if (payout > 0) casino.balances[playerAddress] = (casino.balances[playerAddress] || 0) + payout;
+  casino.gamesPlayed++;
+
+  // Attempt on-chain payout for wins
+  let payoutTxSignature = null;
+  if (payout > betAmount && treasuryKeypair) {
+    try {
+      const payoutLamports = Math.floor((payout - betAmount) * 1_000_000_000);
+      const txBase64 = await buildAndSignPayout(playerAddress, payoutLamports);
+      const submitResult = await submitToNode(txBase64);
+      payoutTxSignature = submitResult.signature || submitResult.txid || null;
+    } catch (e) {
+      console.warn('Casino payout tx failed:', e.message);
+    }
+  }
+
+  console.log(`Casino ${game}: ${playerAddress.slice(0,8)}… bet ${betAmount} → ${payout > 0 ? 'WIN +' + payout.toFixed(4) : 'LOSE'}`);
+
+  res.json({
+    result: resolved.result,
+    payout,
+    payoutAmount: payout > 0 ? payout.toFixed(4) : '0',
+    betAmount: betAmount.toFixed(4),
+    betTxSignature,
+    payoutTxSignature,
+  });
 });
 
 // ── Lottery API ──────────────────────────────────────────────────────────────
@@ -453,6 +724,10 @@ app.post('/api/lottery/claim', async (req, res) => {
 });
 
 // ── Serve Frontend ───────────────────────────────────────────────────────────
+app.get('/casino', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
