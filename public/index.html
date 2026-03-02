@@ -374,13 +374,15 @@ select option{background:var(--bg3);}
 <!-- WALLET MODAL -->
 <div class="modal-overlay" id="walletModal" style="display:none;" onclick="if(event.target===this)closeWalletModal()">
   <div class="modal">
-    <h3>🔗 CONNECT XRS WALLET</h3>
-    <p>Open your Xeris wallet, copy your address, and paste below. Or open this site in the Xeris Wallet Browser for one-tap connect.</p>
+    <h3>🔗 CONNECT WALLET</h3>
+    <p>Connect your Xeris wallet to play.</p>
+    <button class="modal-btn" id="xerisWalletBtn" onclick="connectXerisWallet()" style="margin-bottom:8px;">CONNECT XERIS WALLET</button>
+    <div id="xerisWalletNotice" style="display:none;text-align:center;font-size:.78rem;color:var(--red);margin-bottom:10px;">Xeris Wallet not detected — open this page in the Xeris Wallet Browser</div>
+    <div style="text-align:center;font-size:.72rem;color:var(--muted);margin:10px 0 8px;">OR PASTE ADDRESS (view only)</div>
     <input id="walletAddrInput" type="text" placeholder="XRS wallet address..." autocomplete="off"/>
     <div class="modal-err" id="walletErr"></div>
-    <button class="modal-btn" onclick="confirmWalletConnect()">CONNECT</button>
+    <button class="modal-btn" onclick="confirmWalletConnect()" style="background:var(--bg3);color:var(--green);border:1px solid var(--green);margin-top:6px;">CONNECT ADDRESS</button>
     <button class="modal-cancel" onclick="closeWalletModal()">Cancel</button>
-    <p style="text-align:center;font-size:.75rem;color:var(--muted);margin-top:12px;">No wallet? <a href="https://xerisweb.com" target="_blank" style="color:var(--green);">Get Xeris Wallet →</a></p>
   </div>
 </div>
 
@@ -392,6 +394,7 @@ select option{background:var(--bg3);}
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const S = {
   address: null,
+  walletType: null,  // 'xeris' or 'paste'
   balance: 0,
   currentGame: null,
   rouletteBet: 'red',
@@ -403,16 +406,20 @@ const S = {
 window.addEventListener('load', async () => {
   loadStats();
   loadTreasury();
-  // Try silent auto-connect via Xeris Wallet Browser
+  // Try auto-reconnect via Xeris Wallet Browser
   if (window.xeris) {
     try {
-      const addr = await window.xeris.connect();
-      if (addr) await onConnected(addr);
+      const resp = await window.xeris.connect({ onlyIfTrusted: true });
+      const addr = parseXerisResponse(resp);
+      if (addr) await onConnected(addr, 'xeris');
     } catch(e) {}
   }
-  // Restore session
-  const saved = localStorage.getItem('xrs_addr');
-  if (saved && !S.address) await onConnected(saved);
+  // Restore session from localStorage
+  if (!S.address) {
+    const saved = localStorage.getItem('xrs_addr');
+    const savedType = localStorage.getItem('xrs_type') || 'paste';
+    if (saved) await onConnected(saved, savedType);
+  }
 });
 
 async function loadStats() {
@@ -440,20 +447,51 @@ async function loadTreasury() {
 }
 
 // ─── WALLET ───────────────────────────────────────────────────────────────────
+function parseXerisResponse(resp) {
+  if (!resp) return null;
+  if (typeof resp === 'string') return resp;
+  if (resp.publicKey) return resp.publicKey.toString();
+  if (resp.address) return resp.address;
+  if (window.xeris?.publicKey) return window.xeris.publicKey.toString();
+  if (window.xeris?.address) return window.xeris.address;
+  return null;
+}
+
 function openWalletModal() {
-  if (window.xeris) {
-    window.xeris.connect().then(addr => { if (addr) onConnected(addr); else throw 'no addr'; }).catch(() => {
-      document.getElementById('walletModal').style.display = 'flex';
-    });
-    return;
-  }
+  const notice = document.getElementById('xerisWalletNotice');
+  if (!window.xeris) notice.style.display = 'block';
+  else notice.style.display = 'none';
   document.getElementById('walletModal').style.display = 'flex';
-  setTimeout(() => document.getElementById('walletAddrInput').focus(), 100);
 }
 
 function closeWalletModal() {
   document.getElementById('walletModal').style.display = 'none';
   document.getElementById('walletErr').textContent = '';
+}
+
+async function connectXerisWallet() {
+  if (!window.xeris) {
+    document.getElementById('xerisWalletNotice').style.display = 'block';
+    return;
+  }
+  try {
+    const resp = await window.xeris.connect();
+    const addr = parseXerisResponse(resp);
+    if (!addr) throw new Error('No address returned');
+    closeWalletModal();
+    await onConnected(addr, 'xeris');
+    // Listen for changes
+    if (window.xeris.on) {
+      window.xeris.on('accountChanged', (newAddr) => {
+        const a = typeof newAddr === 'string' ? newAddr : newAddr?.toString();
+        if (a) onConnected(a, 'xeris');
+        else disconnectWallet();
+      });
+      window.xeris.on('disconnect', () => disconnectWallet());
+    }
+  } catch(e) {
+    document.getElementById('walletErr').textContent = 'Connection failed: ' + e.message;
+  }
 }
 
 async function confirmWalletConnect() {
@@ -463,19 +501,40 @@ async function confirmWalletConnect() {
     return;
   }
   closeWalletModal();
-  await onConnected(addr);
+  await onConnected(addr, 'paste');
 }
 
-async function onConnected(address) {
+async function onConnected(address, type) {
   S.address = address;
+  S.walletType = type || 'paste';
   localStorage.setItem('xrs_addr', address);
+  localStorage.setItem('xrs_type', S.walletType);
   const short = address.slice(0,6)+'...'+address.slice(-4);
-  document.getElementById('connectBtn').textContent = short;
-  document.getElementById('connectBtn').classList.add('connected');
+  const btn = document.getElementById('connectBtn');
+  btn.textContent = short;
+  btn.classList.add('connected');
+  btn.onclick = () => disconnectWallet();
   document.getElementById('balanceDisplay').style.display = 'block';
   document.getElementById('depositStrip').style.display = 'flex';
   await refreshBalance();
-  toast('✓ Wallet connected', 'success');
+  toast('✓ Wallet connected' + (type === 'xeris' ? ' (signing enabled)' : ' (view only)'), 'success');
+}
+
+function disconnectWallet() {
+  if (S.walletType === 'xeris' && window.xeris) {
+    try { window.xeris.disconnect(); } catch {}
+  }
+  S.address = null;
+  S.walletType = null;
+  S.balance = 0;
+  localStorage.removeItem('xrs_addr');
+  localStorage.removeItem('xrs_type');
+  const btn = document.getElementById('connectBtn');
+  btn.textContent = '🔗 Connect Wallet';
+  btn.classList.remove('connected');
+  btn.onclick = () => openWalletModal();
+  document.getElementById('balanceDisplay').style.display = 'none';
+  toast('Wallet disconnected', 'info');
 }
 
 async function refreshBalance() {
