@@ -50,7 +50,86 @@ const XerisTx = (() => {
   }
 
   function buildUnsignedTx(messageBytes) { return concat([encodeCompactU16(1), new Uint8Array(64), messageBytes]); }
-  function extractSignature(signedTxBytes) { return signedTxBytes.slice(1, 65); }
+
+  // Extract 64-byte Ed25519 signature from signed tx bytes
+  // Handles both Solana wire format and bincode format (wallet may use either)
+  function extractSigFromTxBytes(bytes) {
+    if (bytes[0] === 1) {
+      // Both formats start with 1, but bincode has 7 more zero bytes (u64 LE count)
+      const isBincode = bytes[1]===0 && bytes[2]===0 && bytes[3]===0
+                     && bytes[4]===0 && bytes[5]===0 && bytes[6]===0 && bytes[7]===0;
+      if (isBincode && bytes.length >= 72) return bytes.slice(8, 72);
+      return bytes.slice(1, 65);  // Solana wire format
+    }
+    // Fallback: read compact-u16 count, skip to sig
+    let offset = 0;
+    let count = bytes[offset] & 0x7f;
+    if (bytes[offset] & 0x80) { offset++; count |= (bytes[offset] & 0x7f) << 7; }
+    offset++;
+    if (count >= 1 && offset + 64 <= bytes.length) return bytes.slice(offset, offset + 64);
+    throw new Error('Could not extract signature from ' + bytes.length + ' bytes');
+  }
+
+  // Legacy alias
+  function extractSignature(signedTxBytes) { return extractSigFromTxBytes(signedTxBytes); }
+
+  // Decode base64 string to Uint8Array
+  function fromBase64(str) {
+    const bin = atob(str);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  // Handle all wallet return formats: extract sig, reassemble signed tx
+  // Returns { signature: Uint8Array(64), signedTx: Uint8Array, txSignature: string }
+  function resolveSignedTx(walletResult, messageBytes) {
+    let sig;
+
+    // Object with explicit .signature (Uint8Array)
+    if (walletResult && typeof walletResult === 'object'
+        && !ArrayBuffer.isView(walletResult) && !Array.isArray(walletResult)) {
+      if (walletResult.signature) {
+        const s = walletResult.signature instanceof Uint8Array
+          ? walletResult.signature : new Uint8Array(walletResult.signature);
+        if (s.length === 64) { sig = s; }
+      }
+      if (!sig && walletResult.signedTransaction) {
+        const txBytes = typeof walletResult.signedTransaction === 'string'
+          ? fromBase64(walletResult.signedTransaction)
+          : new Uint8Array(walletResult.signedTransaction);
+        sig = extractSigFromTxBytes(txBytes);
+      }
+      if (!sig) {
+        // Try .transaction or .data
+        const txBytes = walletResult.transaction || walletResult.data;
+        if (txBytes instanceof Uint8Array || Array.isArray(txBytes)) {
+          sig = extractSigFromTxBytes(new Uint8Array(txBytes));
+        }
+      }
+    }
+
+    // Base64 string → decode → extract sig
+    if (!sig && typeof walletResult === 'string') {
+      sig = extractSigFromTxBytes(fromBase64(walletResult));
+    }
+
+    // Raw bytes
+    if (!sig) {
+      const bytes = walletResult instanceof Uint8Array
+        ? walletResult : new Uint8Array(walletResult);
+      if (bytes.length === 64) sig = bytes;
+      else if (bytes.length > 64) sig = extractSigFromTxBytes(bytes);
+    }
+
+    if (!sig || sig.length !== 64) throw new Error('Could not extract 64-byte signature from wallet');
+
+    // Re-assemble in Solana wire format (don't trust wallet's format)
+    const signedTx = concat([encodeCompactU16(1), sig, messageBytes]);
+    const txSignature = base58Encode(sig);
+
+    return { signature: sig, signedTx, txSignature };
+  }
 
   async function fetchRecentBlockhash() {
     const res = await fetch('/api/xeris/blockhash'); const data = await res.json();
@@ -83,5 +162,5 @@ const XerisTx = (() => {
     return { unsignedTx: buildUnsignedTx(messageBytes), messageBytes };
   }
 
-  return { base58Decode, base58Encode, decodePubkey, encodeNativeTransfer, buildMessage, buildUnsignedTx, extractSignature, fetchRecentBlockhash, buildBetTx, concat, encodeCompactU16 };
+  return { base58Decode, base58Encode, decodePubkey, encodeNativeTransfer, buildMessage, buildUnsignedTx, extractSignature, extractSigFromTxBytes, fromBase64, resolveSignedTx, fetchRecentBlockhash, buildBetTx, concat, encodeCompactU16 };
 })();

@@ -2,8 +2,38 @@ const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 const nacl = require('tweetnacl');
-const bs58 = require('bs58');
 const rateLimit = require('express-rate-limit');
+
+// ── Self-contained Base58 (no bs58 module dependency) ────────────────────────
+const B58_ALPHA = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+const B58_MAP = new Uint8Array(256).fill(255);
+for (let i = 0; i < B58_ALPHA.length; i++) B58_MAP[B58_ALPHA.charCodeAt(i)] = i;
+const bs58 = {
+  decode(str) {
+    const bytes = [0];
+    for (let i = 0; i < str.length; i++) {
+      const c = B58_MAP[str.charCodeAt(i)];
+      if (c === 255) throw new Error('Invalid base58 character');
+      let carry = c;
+      for (let j = 0; j < bytes.length; j++) { carry += bytes[j] * 58; bytes[j] = carry & 0xff; carry >>= 8; }
+      while (carry > 0) { bytes.push(carry & 0xff); carry >>= 8; }
+    }
+    for (let i = 0; i < str.length && str[i] === '1'; i++) bytes.push(0);
+    return Buffer.from(bytes.reverse());
+  },
+  encode(bytes) {
+    const digits = [0];
+    for (let i = 0; i < bytes.length; i++) {
+      let carry = bytes[i];
+      for (let j = 0; j < digits.length; j++) { carry += digits[j] << 8; digits[j] = carry % 58; carry = (carry / 58) | 0; }
+      while (carry > 0) { digits.push(carry % 58); carry = (carry / 58) | 0; }
+    }
+    let out = '';
+    for (let i = 0; i < bytes.length && bytes[i] === 0; i++) out += '1';
+    for (let i = digits.length - 1; i >= 0; i--) out += B58_ALPHA[digits[i]];
+    return out;
+  }
+};
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -210,9 +240,13 @@ async function submitToNode(txBase64) {
   return data;
 }
 
-// ── Verify tx on-chain (8-try poll, NO bypass) ──────────────────────────────
-async function verifyTxOnChain(txSignature) {
-  for (let i = 0; i < 8; i++) {
+// ── Base58 encode (alias for block sig conversion) ───────────────────────────
+function base58Encode(bytes) { return bs58.encode(bytes); }
+
+// ── Verify tx on-chain: try getTransaction, then search recent blocks ────────
+async function verifyTxOnChain(txSignature, fromAddress, toAddress, expectedLamports) {
+  // Method 1: Try getTransaction with the provided signature (base58)
+  for (let i = 0; i < 6; i++) {
     try {
       const r = await fetch(`${XERIS_RPC}/`, {
         method: 'POST',
@@ -220,10 +254,85 @@ async function verifyTxOnChain(txSignature) {
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTransaction', params: [txSignature] }),
       });
       const data = await r.json();
-      if (data?.result) return true;
+      if (data?.result && !data?.result?.error) {
+        console.log('TX verified via getTransaction:', txSignature.slice(0, 20) + '...');
+        return txSignature;
+      }
     } catch {}
-    if (i < 7) await new Promise(r => setTimeout(r, 2000));
+    if (i < 5) await new Promise(r => setTimeout(r, 2000));
   }
+
+  // Method 2: Search recent blocks for a matching transaction
+  if (fromAddress && toAddress) {
+    console.log('getTransaction failed, searching recent blocks...');
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const r = await fetch(`${XERIS_NET}/blocks?limit=5`);
+        const data = await r.json();
+        const blocks = Array.isArray(data) ? data : data?.blocks || [];
+        for (const block of blocks) {
+          if (!block.transactions) continue;
+          for (const tx of block.transactions) {
+            // Check if this tx is from the expected sender to the expected recipient
+            if (!tx.message || !tx.message.instructions) continue;
+            for (const instr of tx.message.instructions) {
+              // Instruction data is the NativeTransfer: [dataLenCompact, 11,0,0,0, lenLE, fromStr, lenLE, toStr, amtLE]
+              const instrData = Array.isArray(instr.data) ? instr.data : (instr.data ? Array.from(instr.data) : null);
+              if (!instrData) {
+                // Try object format: instr might be {programIdIndex, accounts, data}
+                if (typeof instr === 'object' && instr.data) continue;
+                continue;
+              }
+              // Flatten: data might be [[len], 11, 0, 0, 0, ...] or [11, 0, 0, 0, ...]
+              let flat = [];
+              for (const item of instrData) {
+                if (Array.isArray(item)) flat.push(...item);
+                else flat.push(item);
+              }
+              // Check for variant 11 (NativeTransfer)
+              if (flat.length < 20) continue;
+              // Skip compact u16 data length prefix if present
+              let offset = 0;
+              if (flat[0] >= 100 && flat[1] === 11 && flat[2] === 0 && flat[3] === 0 && flat[4] === 0) offset = 1; // 1-byte compact u16
+              else if (flat[0] === 11 && flat[1] === 0 && flat[2] === 0 && flat[3] === 0) offset = 0;
+              else continue;
+              const variant = flat[offset] | (flat[offset+1] << 8) | (flat[offset+2] << 16) | (flat[offset+3] << 24);
+              if (variant !== 11) continue;
+              // Decode sender string
+              const senderLen = flat[offset+4] | (flat[offset+5] << 8); // first 2 bytes of u64 LE length
+              if (senderLen > 50 || senderLen < 20) continue;
+              const senderStart = offset + 12; // 4 (variant) + 8 (u64 len)
+              const sender = String.fromCharCode(...flat.slice(senderStart, senderStart + senderLen));
+              if (sender !== fromAddress) continue;
+              // Decode recipient string
+              const recipLenOffset = senderStart + senderLen;
+              const recipLen = flat[recipLenOffset] | (flat[recipLenOffset+1] << 8);
+              if (recipLen > 50 || recipLen < 20) continue;
+              const recipStart = recipLenOffset + 8;
+              const recip = String.fromCharCode(...flat.slice(recipStart, recipStart + recipLen));
+              if (recip !== toAddress) continue;
+              // Match! Extract signature from tx
+              let sigBytes = null;
+              if (Array.isArray(tx.signatures) && tx.signatures.length >= 2 && Array.isArray(tx.signatures[1])) {
+                sigBytes = tx.signatures[1]; // [[numSigs], [sigBytes...]]
+              }
+              if (sigBytes && sigBytes.length === 64) {
+                const realSig = base58Encode(Buffer.from(sigBytes));
+                console.log('TX found in block ' + block.slot + ': ' + realSig.slice(0, 20) + '...');
+                return realSig;
+              }
+              // Even without extracting sig, we found a match
+              console.log('TX matched in block ' + block.slot + ' (could not extract sig)');
+              return txSignature; // return original sig as fallback
+            }
+          }
+        }
+      } catch (e) { console.warn('Block search error:', e.message); }
+      if (attempt < 3) await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+
+  console.warn('TX verification failed for:', txSignature?.slice(0, 30));
   return false;
 }
 
