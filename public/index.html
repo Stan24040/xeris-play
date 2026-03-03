@@ -370,7 +370,6 @@ async function placeBet() {
   else if (game==='roulette') { amount=parseFloat(document.getElementById('rouletteAmount').value); betType=S.rouletteBet; betValue=S.rouletteBet==='number'?(document.getElementById('rouletteNumber').value||'7'):betType; }
   else if (game==='blackjack') { amount=parseFloat(document.getElementById('bjAmount').value); betType='deal'; betValue='0'; }
   if (!amount||amount<0.01) { toast('Min bet 0.01 XRS','error'); return; }
-  if (amount>S.balance) { toast('Insufficient balance','error'); return; }
 
   setBetLoading(true); hideResult();
   try {

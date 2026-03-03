@@ -11,7 +11,8 @@
     "express": "^4.22.1",
     "tweetnacl": "^1.0.3",
     "bs58": "^4.0.1",
-    "express-rate-limit": "^7.1.5"
+    "express-rate-limit": "^7.1.5",
+    "pg": "^8.13.1"
   },
   "engines": {
     "node": ">=18"
