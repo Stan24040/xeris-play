@@ -275,6 +275,26 @@ async function requestFaucet(address) {
 // ══════════════════════════════════════════════
 //  WALLET (Xeris Wallet only)
 // ══════════════════════════════════════════════
+function extractAddress(resp) {
+  if (!resp) return null;
+  if (typeof resp === 'string' && resp.length >= 20) return resp.trim();
+  if (typeof resp === 'object') {
+    const pk = resp.publicKey || resp.public_key;
+    if (pk) {
+      if (typeof pk === 'string') return pk.trim();
+      if (typeof pk.toBase58 === 'function') return pk.toBase58();
+      if (typeof pk.toString === 'function' && pk.toString() !== '[object Object]') return pk.toString();
+      if (pk instanceof Uint8Array || (pk.length === 32 && typeof pk[0] === 'number')) return XerisTx.base58Encode(new Uint8Array(pk));
+    }
+    if (typeof resp.address === 'string') return resp.address.trim();
+    if (typeof resp.wallet === 'string') return resp.wallet.trim();
+    for (const v of Object.values(resp)) {
+      if (typeof v === 'string' && v.length >= 20 && v.length <= 50 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(v)) return v;
+    }
+  }
+  return null;
+}
+
 async function connectWallet() {
   if (state.address) {
     if (window.xeris) { try { window.xeris.disconnect(); } catch {} }
@@ -292,16 +312,11 @@ async function connectWallet() {
   try {
     toast('Connecting to Xeris Wallet…', 'info');
     const resp = await window.xeris.connect();
-    let address;
-    if (typeof resp === 'string') address = resp;
-    else if (resp?.publicKey) address = resp.publicKey.toString();
-    else if (resp?.address) address = resp.address;
-    else if (window.xeris.publicKey) address = window.xeris.publicKey.toString();
-    else if (window.xeris.address) address = window.xeris.address;
-    if (!address) throw new Error('No address returned');
+    const address = extractAddress(resp) || extractAddress(window.xeris);
+    if (!address) throw new Error('No address returned from wallet');
     onConnected(address);
     if (window.xeris.on) {
-      window.xeris.on('accountChanged', (a) => { if (a) onConnected(typeof a === 'string' ? a : a.toString()); else connectWallet(); });
+      window.xeris.on('accountChanged', (a) => { const addr = extractAddress(a); if (addr) onConnected(addr); else connectWallet(); });
       window.xeris.on('disconnect', () => { state.address = null; document.getElementById('connectBtn').textContent = 'CONNECT'; document.getElementById('connectBtn').classList.remove('connected'); document.getElementById('buyBtn').disabled = true; document.getElementById('buyBtn').textContent = 'CONNECT WALLET FIRST'; });
     }
   } catch (e) { toast('Connection failed: ' + e.message, 'error'); }
@@ -481,7 +496,7 @@ document.getElementById('ticketCount').addEventListener('input', () => updateSta
 // ══════════════════════════════════════════════
 async function init() {
   if (window.xeris) {
-    try { const addr = await window.xeris.connect(); if (addr) onConnected(typeof addr === 'string' ? addr : addr.toString()); } catch {}
+    try { const resp = await window.xeris.connect(); const addr = extractAddress(resp) || extractAddress(window.xeris); if (addr) onConnected(addr); } catch {}
   } else {
     document.getElementById('walletNotice').style.display = 'block';
   }
