@@ -19,7 +19,6 @@ html,body{overflow-x:hidden;max-width:100vw;}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(168,255,62,.07),transparent);pointer-events:none;z-index:0;}
 
-/* NAV */
 nav{position:sticky;top:0;z-index:100;background:rgba(6,10,15,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:60px;max-width:100vw;overflow:hidden;}
 .logo{font-size:1.3rem;font-weight:700;letter-spacing:2px;color:var(--text);}
 .logo span{color:var(--green);}
@@ -31,7 +30,6 @@ nav{position:sticky;top:0;z-index:100;background:rgba(6,10,15,.9);backdrop-filte
 #connectBtn:hover{background:var(--green2);transform:translateY(-1px);}
 #connectBtn.connected{background:transparent;color:var(--green);border:1px solid var(--green);font-size:.75rem;}
 
-/* HERO */
 .hero{text-align:center;padding:60px 20px 40px;position:relative;z-index:1;overflow:hidden;}
 .hero-badge{display:inline-block;background:rgba(168,255,62,.12);color:var(--green);font-size:.72rem;letter-spacing:2px;padding:5px 14px;border-radius:20px;margin-bottom:20px;border:1px solid rgba(168,255,62,.2);}
 .hero h1{font-size:clamp(2rem,8vw,3.5rem);font-weight:700;line-height:1.1;margin-bottom:16px;}
@@ -42,7 +40,6 @@ nav{position:sticky;top:0;z-index:100;background:rgba(6,10,15,.9);backdrop-filte
 .stat-val{font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--green);}
 .stat-label{font-size:.72rem;color:var(--muted);letter-spacing:1px;margin-top:2px;}
 
-/* GAMES GRID */
 .section{padding:20px;max-width:900px;margin:0 auto;position:relative;z-index:1;overflow:hidden;}
 .section-title{font-size:.75rem;letter-spacing:2px;color:var(--muted);margin-bottom:16px;text-transform:uppercase;}
 .games-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
@@ -56,14 +53,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(6,10,15,.9);backdrop-filte
 .game-name{font-weight:700;font-size:.9rem;letter-spacing:.5px;margin-bottom:4px;}
 .game-desc{font-size:.72rem;color:var(--muted);}
 
-/* GAME PANEL */
 #gamePanel{display:none;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-top:16px;}
-.game-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
-.game-panel-title{font-size:1.1rem;font-weight:700;}
-.close-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:.8rem;}
-.close-btn:hover{border-color:var(--red);color:var(--red);}
-
-/* INPUTS */
 .input-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .input-group{flex:1;min-width:120px;}
 .input-label{font-size:.72rem;color:var(--muted);margin-bottom:6px;letter-spacing:.5px;display:block;}
@@ -74,11 +64,12 @@ select option{background:var(--bg3);}
 .qa{background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:.78rem;transition:.15s;}
 .qa:hover{border-color:var(--green);color:var(--green);}
 
-/* CRASH */
 .crash-display{background:var(--bg3);border-radius:10px;padding:30px;text-align:center;margin-bottom:16px;border:1px solid var(--border);position:relative;overflow:hidden;}
 .crash-mult{font-family:var(--mono);font-size:3.5rem;font-weight:700;color:var(--green);transition:color .3s;}
 .crash-mult.crashed{color:var(--red);}
 .crash-mult.won{color:var(--gold);}
+.crash-mult.animating{animation:crashPulse .15s ease-in-out;}
+@keyframes crashPulse{0%{transform:scale(1);}50%{transform:scale(1.08);}100%{transform:scale(1);}}
 .crash-label{font-size:.75rem;color:var(--muted);margin-top:4px;letter-spacing:1px;}
 .crash-history{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;overflow:hidden;}
 .ch-item{padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:.72rem;font-weight:700;}
@@ -86,19 +77,21 @@ select option{background:var(--bg3);}
 .ch-item.mid{background:rgba(168,255,62,.15);color:var(--green);}
 .ch-item.high{background:rgba(245,200,66,.15);color:var(--gold);}
 
-/* DICE */
 .dice-display{display:flex;align-items:center;gap:20px;background:var(--bg3);border-radius:10px;padding:20px;margin-bottom:16px;border:1px solid var(--border);}
-.dice-result{font-family:var(--mono);font-size:3rem;font-weight:700;color:var(--text);}
+.dice-result{font-family:var(--mono);font-size:3rem;font-weight:700;color:var(--text);min-width:80px;text-align:center;}
+.dice-result.rolling{animation:diceShake .1s ease-in-out;}
+@keyframes diceShake{0%{transform:rotate(0);}25%{transform:rotate(-8deg) scale(1.1);}75%{transform:rotate(8deg) scale(1.1);}100%{transform:rotate(0);}}
 .dice-info{flex:1;}
 .dice-range{font-size:.8rem;color:var(--muted);}
 .dice-payout{font-size:.9rem;color:var(--green);margin-top:4px;font-weight:600;}
 
-/* ROULETTE */
 .roulette-display{background:var(--bg3);border-radius:10px;padding:20px;margin-bottom:16px;border:1px solid var(--border);text-align:center;}
 .roulette-result{font-family:var(--mono);font-size:3rem;font-weight:700;}
 .roulette-result.red{color:var(--red);}
 .roulette-result.black{color:var(--text);}
 .roulette-result.green{color:var(--green);}
+.roulette-result.spinning{animation:rouletteSpin .08s linear;}
+@keyframes rouletteSpin{0%{transform:rotateX(0);}100%{transform:rotateX(360deg);}}
 .roulette-bets{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;}
 .rbet{background:var(--bg3);border:1px solid var(--border);padding:8px;border-radius:8px;cursor:pointer;text-align:center;transition:.15s;}
 .rbet:hover,.rbet.sel{border-color:var(--green);background:rgba(168,255,62,.08);}
@@ -106,11 +99,11 @@ select option{background:var(--bg3);}
 .rbet-name{font-size:.8rem;font-weight:600;}
 .rbet-odds{font-size:.7rem;color:var(--muted);}
 
-/* BLACKJACK */
 .bj-table{background:var(--bg3);border-radius:10px;padding:20px;margin-bottom:16px;border:1px solid var(--border);}
 .bj-hand-label{font-size:.72rem;color:var(--muted);letter-spacing:1px;margin-bottom:8px;}
 .bj-cards{display:flex;gap:8px;flex-wrap:wrap;min-height:60px;margin-bottom:16px;}
-.card{background:#1a2535;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:1rem;font-weight:700;min-width:40px;text-align:center;}
+.card{background:#1a2535;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:1rem;font-weight:700;min-width:40px;text-align:center;opacity:0;transform:translateY(-20px) rotateY(90deg);transition:all .3s ease;}
+.card.dealt{opacity:1;transform:translateY(0) rotateY(0);}
 .card.red{color:var(--red);}
 .card.black{color:var(--text);}
 .card.hidden{color:var(--muted);filter:blur(2px);}
@@ -120,45 +113,29 @@ select option{background:var(--bg3);}
 .bj-btn:hover{border-color:var(--green);color:var(--green);}
 .bj-btn:disabled{opacity:.4;cursor:not-allowed;}
 
-/* BET BUTTON */
 .bet-btn{width:100%;padding:14px;background:var(--green);color:#000;border:none;border-radius:10px;font-weight:700;font-size:1rem;cursor:pointer;letter-spacing:.5px;transition:all .2s;margin-top:8px;}
 .bet-btn:hover{background:var(--green2);transform:translateY(-1px);}
 .bet-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 .bet-btn.loading{background:var(--muted);}
 
-/* RESULT */
-.result-box{border-radius:10px;padding:16px;margin-top:14px;text-align:center;display:none;}
+.result-box{border-radius:10px;padding:16px;margin-top:14px;text-align:center;display:none;transition:all .3s ease;}
 .result-box.win{background:rgba(168,255,62,.1);border:1px solid rgba(168,255,62,.3);}
 .result-box.lose{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);}
+.result-box.push{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);}
+.result-box.flash-win{animation:flashWin .5s ease;}
+.result-box.flash-lose{animation:flashLose .5s ease;}
+@keyframes flashWin{0%{box-shadow:0 0 0 rgba(168,255,62,0);}50%{box-shadow:0 0 30px rgba(168,255,62,.4);}100%{box-shadow:0 0 0 rgba(168,255,62,0);}}
+@keyframes flashLose{0%{box-shadow:0 0 0 rgba(255,77,109,0);}50%{box-shadow:0 0 30px rgba(255,77,109,.4);}100%{box-shadow:0 0 0 rgba(255,77,109,0);}}
 .result-title{font-size:1.3rem;font-weight:700;margin-bottom:4px;}
 .result-title.win{color:var(--green);}
 .result-title.lose{color:var(--red);}
+.result-title.push{color:var(--blue);}
 .result-detail{font-size:.82rem;color:var(--muted);}
 .result-tx{font-family:var(--mono);font-size:.7rem;color:var(--blue);margin-top:6px;word-break:break-all;cursor:pointer;}
 
-/* DEPOSIT PANEL */
-#depositPanel{display:none;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-top:16px;}
-.dep-steps{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;}
-.dep-step{display:flex;gap:12px;align-items:flex-start;}
-.dep-num{width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
-.dep-text{font-size:.85rem;color:var(--muted);}
-.dep-text strong{color:var(--text);}
-.treasury-addr{font-family:var(--mono);font-size:.72rem;background:var(--bg3);padding:8px 12px;border-radius:6px;border:1px solid var(--border);margin-top:6px;word-break:break-all;color:var(--blue);}
+.wallet-notice{background:rgba(245,200,66,.08);border:1px solid rgba(245,200,66,.2);border-radius:10px;padding:16px;text-align:center;margin-bottom:16px;display:none;}
+.wallet-notice a{color:var(--gold);font-weight:600;}
 
-/* WALLET MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;overflow:hidden;}
-.modal{background:var(--card);border:1px solid var(--green);border-radius:16px;padding:28px;width:100%;max-width:420px;animation:fadeUp .2s ease;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
-.modal h3{font-size:1.1rem;font-weight:700;color:var(--green);margin-bottom:6px;letter-spacing:1px;}
-.modal p{font-size:.82rem;color:var(--muted);margin-bottom:16px;}
-.modal input{margin-bottom:10px;}
-.modal-btn{width:100%;padding:13px;background:var(--green);color:#000;border:none;border-radius:10px;font-weight:700;font-size:.95rem;cursor:pointer;letter-spacing:.5px;}
-.modal-btn:hover{background:var(--green2);}
-.modal-cancel{width:100%;margin-top:8px;padding:10px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-size:.85rem;}
-.modal-cancel:hover{border-color:var(--red);color:var(--red);}
-.modal-err{color:var(--red);font-size:.78rem;min-height:18px;margin-top:4px;}
-
-/* TOAST */
 .toast-wrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;}
 .toast{background:var(--bg3);border:1px solid var(--border);padding:10px 20px;border-radius:24px;font-size:.85rem;animation:slideUp .25s ease;max-width:90vw;overflow:hidden;text-overflow:ellipsis;word-break:break-word;}
 .toast.success{border-color:var(--green);color:var(--green);}
@@ -166,16 +143,13 @@ select option{background:var(--bg3);}
 .toast.info{border-color:var(--blue);color:var(--blue);}
 @keyframes slideUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
-/* BOTTOM BAR */
 .bottom-bar{background:rgba(6,10,15,.95);border-top:1px solid var(--border);padding:16px 20px;text-align:center;margin-top:40px;}
 .bottom-bar p{font-size:.75rem;color:var(--muted);}
 .bottom-bar a{color:var(--green);text-decoration:none;}
 
-/* SPINNER */
 @keyframes spin{to{transform:rotate(360deg);}}
 .spinner{width:18px;height:18px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px;}
 
-/* ── RESPONSIVE ── */
 @media(max-width:768px){
   nav{padding:0 10px;height:50px;}
   .logo{font-size:1rem;letter-spacing:1px;}
@@ -186,8 +160,6 @@ select option{background:var(--bg3);}
   .hero{padding:40px 16px 24px;}
   .hero h1{font-size:clamp(1.6rem,6vw,2.5rem);}
   .hero p{font-size:.85rem;}
-  .hero-stats{gap:16px;}
-  .stat-val{font-size:1rem;}
   .section{padding:16px 12px;}
   .games-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
   .game-card{padding:14px 10px;}
@@ -203,751 +175,313 @@ select option{background:var(--bg3);}
   .roulette-bets{grid-template-columns:repeat(3,1fr);gap:4px;}
   .rbet{padding:6px;}
   .rbet-name{font-size:.7rem;}
-  .rbet-odds{font-size:.6rem;}
   .bj-table{padding:14px;}
   .card{padding:6px 8px;font-size:.85rem;min-width:36px;}
   .bj-btn{padding:8px;font-size:.78rem;}
   .bet-btn{padding:12px;font-size:.9rem;}
   .result-title{font-size:1.1rem;}
-  .modal{padding:20px;max-width:calc(100% - 24px);}
-  .modal h3{font-size:.95rem;}
-  .modal-btn{padding:11px;font-size:.85rem;}
-  .toast{padding:8px 14px;font-size:.78rem;}
-  .bottom-bar{padding:12px 16px;}
-  .bottom-bar p{font-size:.65rem;}
-  .dep-steps{gap:10px;}
-  .dep-text{font-size:.78rem;}
-  .treasury-addr{font-size:.65rem;}
 }
-
 @media(max-width:380px){
   nav{padding:0 8px;height:44px;}
-  .logo{font-size:.85rem;letter-spacing:.5px;}
-  .nav-right{gap:4px;}
-  .nav-link{font-size:.6rem;padding:4px 7px;letter-spacing:.5px;}
-  #balanceDisplay{font-size:.65rem;padding:3px 6px;}
-  #connectBtn{padding:5px 8px;font-size:.65rem;letter-spacing:0;}
+  .logo{font-size:.85rem;}
+  .nav-link{font-size:.6rem;padding:4px 7px;}
+  #connectBtn{padding:5px 8px;font-size:.65rem;}
   .hero{padding:30px 12px 16px;}
-  .hero-badge{font-size:.6rem;padding:3px 10px;}
   .hero h1{font-size:clamp(1.3rem,5vw,2rem);}
-  .hero p{font-size:.78rem;}
-  .stat-val{font-size:.9rem;}
-  .stat-label{font-size:.6rem;}
   .section{padding:12px 8px;}
-  .section-title{font-size:.65rem;}
   .game-card{padding:12px 8px;}
   .game-icon{font-size:1.2rem;margin-bottom:4px;}
   .game-name{font-size:.7rem;}
-  .game-desc{font-size:.58rem;}
-  #gamePanel{padding:12px;}
-  .game-panel-title{font-size:.9rem;}
-  .close-btn{font-size:.7rem;padding:4px 8px;}
-  .crash-display{padding:20px;}
   .crash-mult{font-size:2rem;}
   .dice-result{font-size:1.8rem;}
   .roulette-result{font-size:2rem;}
-  .quick-amounts{gap:4px;}
-  .qa{padding:4px 7px;font-size:.68rem;}
   input,select{padding:8px 10px;font-size:.8rem;}
-  .input-label{font-size:.65rem;}
   .bet-btn{padding:10px;font-size:.82rem;}
-  .modal{padding:16px;max-width:calc(100% - 16px);}
-  .modal h3{font-size:.85rem;}
-  .modal p{font-size:.72rem;}
-  .modal-btn{padding:10px;font-size:.8rem;}
-  .modal-cancel{padding:8px;font-size:.75rem;}
 }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
   <div class="logo">XERIS<span>.PLAY</span></div>
   <div class="nav-right">
     <a href="/" class="nav-link">LOTTERY</a>
     <div id="balanceDisplay">0.0000 XRS</div>
-    <button id="connectBtn" onclick="openWalletModal()">🔗 Connect Wallet</button>
+    <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
   </div>
 </nav>
 
-<!-- HERO -->
 <div class="hero">
   <div class="hero-badge">POWERED BY XERIS BLOCKCHAIN</div>
   <h1>Play Fair.<br><span>Win Big.</span><br>On-Chain.</h1>
-  <p>Provably fair casino games with real XRS currency. Every bet verified on-chain.</p>
+  <p>Every bet is a signed on-chain transaction. Provably fair, instant payouts.</p>
   <div class="hero-stats">
-    <div class="stat"><div class="stat-val" id="statGames">—</div><div class="stat-label">GAMES PLAYED</div></div>
-    <div class="stat"><div class="stat-val" id="statPot">—</div><div class="stat-label">TREASURY XRS</div></div>
+    <div class="stat"><div class="stat-val" id="statGames">--</div><div class="stat-label">GAMES PLAYED</div></div>
+    <div class="stat"><div class="stat-val" id="statPot">--</div><div class="stat-label">TREASURY XRS</div></div>
     <div class="stat"><div class="stat-val">0%</div><div class="stat-label">HOUSE EDGE</div></div>
   </div>
 </div>
 
-<!-- MAIN -->
 <div class="section">
-  <!-- DEPOSIT STRIP -->
-  <div id="depositStrip" style="display:none;background:rgba(168,255,62,.06);border:1px solid rgba(168,255,62,.2);border-radius:10px;padding:12px 16px;margin-bottom:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-    <span style="font-size:.85rem;color:var(--muted);">Need XRS to play? Deposit to your casino balance.</span>
-    <button onclick="openDepositPanel()" style="background:var(--green);color:#000;border:none;padding:7px 14px;border-radius:7px;font-weight:700;font-size:.8rem;cursor:pointer;">DEPOSIT</button>
-  </div>
+  <div class="wallet-notice" id="walletNotice">Open this page in the <a href="https://xerisweb.com" target="_blank">Xeris Wallet Browser</a> to connect and play.</div>
 
-  <!-- DEPOSIT PANEL -->
-  <div id="depositPanel">
-    <div class="game-panel-header">
-      <span class="game-panel-title">💰 Deposit XRS</span>
-      <button class="close-btn" onclick="closeDepositPanel()">✕ Close</button>
-    </div>
-    <div class="dep-steps">
-      <div class="dep-step"><div class="dep-num">1</div><div class="dep-text"><strong>Copy the treasury address</strong><div class="treasury-addr" id="treasuryAddr">Loading...</div></div></div>
-      <div class="dep-step"><div class="dep-num">2</div><div class="dep-text"><strong>Send XRS from your wallet</strong><br>to the treasury address above</div></div>
-      <div class="dep-step"><div class="dep-num">3</div><div class="dep-text"><strong>Enter the transaction signature</strong> from your wallet after sending</div></div>
-    </div>
-    <div class="input-row">
-      <div class="input-group"><label class="input-label">TX SIGNATURE</label><input id="depTxSig" placeholder="Transaction signature..." /></div>
-      <div class="input-group" style="max-width:120px;"><label class="input-label">AMOUNT (XRS)</label><input id="depAmount" type="number" placeholder="10" min="1"/></div>
-    </div>
-    <button class="bet-btn" onclick="doDeposit()">CONFIRM DEPOSIT</button>
-    <div id="depResult" class="result-box" style="margin-top:12px;"></div>
-  </div>
-
-  <!-- GAMES -->
   <div class="section-title">Choose a game</div>
   <div class="games-grid">
-    <div class="game-card" id="card-crash" onclick="selectGame('crash')">
-      <div class="game-icon">🚀</div>
-      <div class="game-name">CRASH</div>
-      <div class="game-desc">Multiplier up to 1000×</div>
-    </div>
-    <div class="game-card" id="card-dice" onclick="selectGame('dice')">
-      <div class="game-icon">🎲</div>
-      <div class="game-name">DICE</div>
-      <div class="game-desc">Over, under, exact</div>
-    </div>
-    <div class="game-card" id="card-roulette" onclick="selectGame('roulette')">
-      <div class="game-icon">🎡</div>
-      <div class="game-name">ROULETTE</div>
-      <div class="game-desc">35× straight-up payout</div>
-    </div>
-    <div class="game-card" id="card-blackjack" onclick="selectGame('blackjack')">
-      <div class="game-icon">🃏</div>
-      <div class="game-name">BLACKJACK</div>
-      <div class="game-desc">3:2 on natural BJ</div>
-    </div>
+    <div class="game-card" id="card-crash" onclick="selectGame('crash')"><div class="game-icon">🚀</div><div class="game-name">CRASH</div><div class="game-desc">Up to 1000x</div></div>
+    <div class="game-card" id="card-dice" onclick="selectGame('dice')"><div class="game-icon">🎲</div><div class="game-name">DICE</div><div class="game-desc">Over, under, exact</div></div>
+    <div class="game-card" id="card-roulette" onclick="selectGame('roulette')"><div class="game-icon">🎡</div><div class="game-name">ROULETTE</div><div class="game-desc">36x on green</div></div>
+    <div class="game-card" id="card-blackjack" onclick="selectGame('blackjack')"><div class="game-icon">🃏</div><div class="game-name">BLACKJACK</div><div class="game-desc">3:2 on natural BJ</div></div>
   </div>
 
-  <!-- GAME PANEL -->
   <div id="gamePanel">
-
-    <!-- CRASH -->
     <div id="game-crash" style="display:none;">
-      <div class="crash-display">
-        <div class="crash-mult" id="crashMult">1.00×</div>
-        <div class="crash-label" id="crashLabel">PLACE BET TO PLAY</div>
-      </div>
+      <div class="crash-display"><div class="crash-mult" id="crashMult">1.00x</div><div class="crash-label" id="crashLabel">PLACE BET TO PLAY</div></div>
       <div class="crash-history" id="crashHistory"></div>
       <div class="input-row">
-        <div class="input-group"><label class="input-label">BET AMOUNT (XRS)</label><input id="crashAmount" type="number" placeholder="10" min="1" oninput="updateCrashPayout()"/></div>
+        <div class="input-group"><label class="input-label">BET AMOUNT (XRS)</label><input id="crashAmount" type="number" placeholder="10" min="0.01" step="0.01" oninput="updateCrashPayout()"/></div>
         <div class="input-group"><label class="input-label">AUTO CASHOUT AT</label><input id="crashTarget" type="number" placeholder="2.00" step="0.1" min="1.1" oninput="updateCrashPayout()"/></div>
       </div>
       <div class="quick-amounts">
-        <span class="qa" onclick="setAmt('crashAmount',5)">5</span>
-        <span class="qa" onclick="setAmt('crashAmount',10)">10</span>
-        <span class="qa" onclick="setAmt('crashAmount',25)">25</span>
-        <span class="qa" onclick="setAmt('crashAmount',50)">50</span>
-        <span class="qa" onclick="setAmt('crashAmount',100)">100</span>
-        <span style="margin-left:auto;font-size:.75rem;color:var(--muted);">Potential win: <span id="crashPayout" style="color:var(--green);font-weight:700;">—</span></span>
+        <span class="qa" onclick="setAmt('crashAmount',5)">5</span><span class="qa" onclick="setAmt('crashAmount',10)">10</span><span class="qa" onclick="setAmt('crashAmount',25)">25</span><span class="qa" onclick="setAmt('crashAmount',50)">50</span><span class="qa" onclick="setAmt('crashAmount',100)">100</span>
+        <span style="margin-left:auto;font-size:.75rem;color:var(--muted);">Potential: <span id="crashPayout" style="color:var(--green);font-weight:700;">--</span></span>
       </div>
     </div>
 
-    <!-- DICE -->
     <div id="game-dice" style="display:none;">
-      <div class="dice-display">
-        <div class="dice-result" id="diceResult">?</div>
-        <div class="dice-info">
-          <div class="dice-range" id="diceRange">Roll over/under 50</div>
-          <div class="dice-payout" id="dicePayout">Win chance: 49% · Payout: 1.96×</div>
-        </div>
-      </div>
+      <div class="dice-display"><div class="dice-result" id="diceResult">?</div><div class="dice-info"><div class="dice-range" id="diceRange">Roll over/under 50</div><div class="dice-payout" id="dicePayout">Win chance: 49% · 1.96x</div></div></div>
       <div class="input-row">
-        <div class="input-group"><label class="input-label">BET TYPE</label>
-          <select id="diceBetType" onchange="updateDiceInfo()">
-            <option value="over">Over</option>
-            <option value="under">Under</option>
-            <option value="exact">Exact</option>
-          </select>
-        </div>
-        <div class="input-group"><label class="input-label">TARGET NUMBER (1-100)</label><input id="diceBetValue" type="number" placeholder="50" min="1" max="100" oninput="updateDiceInfo()"/></div>
-        <div class="input-group"><label class="input-label">BET AMOUNT (XRS)</label><input id="diceAmount" type="number" placeholder="10" min="1"/></div>
+        <div class="input-group"><label class="input-label">BET TYPE</label><select id="diceBetType" onchange="updateDiceInfo()"><option value="over">Over</option><option value="under">Under</option><option value="exact">Exact</option></select></div>
+        <div class="input-group"><label class="input-label">TARGET (1-100)</label><input id="diceBetValue" type="number" placeholder="50" min="1" max="100" oninput="updateDiceInfo()"/></div>
+        <div class="input-group"><label class="input-label">BET (XRS)</label><input id="diceAmount" type="number" placeholder="10" min="0.01" step="0.01"/></div>
       </div>
-      <div class="quick-amounts">
-        <span class="qa" onclick="setAmt('diceAmount',5)">5</span>
-        <span class="qa" onclick="setAmt('diceAmount',10)">10</span>
-        <span class="qa" onclick="setAmt('diceAmount',25)">25</span>
-        <span class="qa" onclick="setAmt('diceAmount',50)">50</span>
-      </div>
+      <div class="quick-amounts"><span class="qa" onclick="setAmt('diceAmount',5)">5</span><span class="qa" onclick="setAmt('diceAmount',10)">10</span><span class="qa" onclick="setAmt('diceAmount',25)">25</span><span class="qa" onclick="setAmt('diceAmount',50)">50</span></div>
     </div>
 
-    <!-- ROULETTE -->
     <div id="game-roulette" style="display:none;">
-      <div class="roulette-display">
-        <div class="roulette-result" id="rouletteResult">?</div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:4px;" id="rouletteColor">Spin to play</div>
-      </div>
+      <div class="roulette-display"><div class="roulette-result" id="rouletteResult">?</div><div style="font-size:.75rem;color:var(--muted);margin-top:4px;" id="rouletteColor">Spin to play</div></div>
       <div style="margin-bottom:10px;font-size:.72rem;color:var(--muted);letter-spacing:.5px;">SELECT BET TYPE</div>
       <div class="roulette-bets">
-        <div class="rbet sel" id="rbet-red" onclick="selectRoulettebet('red')"><div class="rbet-name" style="color:var(--red);">🔴 Red</div><div class="rbet-odds">2×</div></div>
-        <div class="rbet" id="rbet-black" onclick="selectRoulettebet('black')"><div class="rbet-name">⚫ Black</div><div class="rbet-odds">2×</div></div>
-        <div class="rbet" id="rbet-green" onclick="selectRoulettebet('green')"><div class="rbet-name" style="color:var(--green);">🟢 Green</div><div class="rbet-odds">14×</div></div>
-        <div class="rbet" id="rbet-even" onclick="selectRoulettebet('even')"><div class="rbet-name">Even</div><div class="rbet-odds">2×</div></div>
-        <div class="rbet" id="rbet-odd" onclick="selectRoulettebet('odd')"><div class="rbet-name">Odd</div><div class="rbet-odds">2×</div></div>
-        <div class="rbet" id="rbet-number" onclick="selectRoulettebet('number')"><div class="rbet-name">Straight</div><div class="rbet-odds">35×</div></div>
+        <div class="rbet sel" id="rbet-red" onclick="selectRouletteBet('red')"><div class="rbet-name" style="color:var(--red);">Red</div><div class="rbet-odds">2x</div></div>
+        <div class="rbet" id="rbet-black" onclick="selectRouletteBet('black')"><div class="rbet-name">Black</div><div class="rbet-odds">2x</div></div>
+        <div class="rbet" id="rbet-green" onclick="selectRouletteBet('green')"><div class="rbet-name" style="color:var(--green);">Green</div><div class="rbet-odds">36x</div></div>
+        <div class="rbet" id="rbet-even" onclick="selectRouletteBet('even')"><div class="rbet-name">Even</div><div class="rbet-odds">2x</div></div>
+        <div class="rbet" id="rbet-odd" onclick="selectRouletteBet('odd')"><div class="rbet-name">Odd</div><div class="rbet-odds">2x</div></div>
+        <div class="rbet" id="rbet-number" onclick="selectRouletteBet('number')"><div class="rbet-name">Straight</div><div class="rbet-odds">35x</div></div>
       </div>
-      <div class="input-row" id="rouletteNumberRow" style="display:none;">
-        <div class="input-group"><label class="input-label">NUMBER (0-36)</label><input id="rouletteNumber" type="number" placeholder="7" min="0" max="36"/></div>
-      </div>
-      <div class="input-row">
-        <div class="input-group"><label class="input-label">BET AMOUNT (XRS)</label><input id="rouletteAmount" type="number" placeholder="10" min="1"/></div>
-      </div>
-      <div class="quick-amounts">
-        <span class="qa" onclick="setAmt('rouletteAmount',5)">5</span>
-        <span class="qa" onclick="setAmt('rouletteAmount',10)">10</span>
-        <span class="qa" onclick="setAmt('rouletteAmount',25)">25</span>
-        <span class="qa" onclick="setAmt('rouletteAmount',50)">50</span>
-      </div>
+      <div class="input-row" id="rouletteNumberRow" style="display:none;"><div class="input-group"><label class="input-label">NUMBER (0-36)</label><input id="rouletteNumber" type="number" placeholder="7" min="0" max="36"/></div></div>
+      <div class="input-row"><div class="input-group"><label class="input-label">BET (XRS)</label><input id="rouletteAmount" type="number" placeholder="10" min="0.01" step="0.01"/></div></div>
+      <div class="quick-amounts"><span class="qa" onclick="setAmt('rouletteAmount',5)">5</span><span class="qa" onclick="setAmt('rouletteAmount',10)">10</span><span class="qa" onclick="setAmt('rouletteAmount',25)">25</span><span class="qa" onclick="setAmt('rouletteAmount',50)">50</span></div>
     </div>
 
-    <!-- BLACKJACK -->
     <div id="game-blackjack" style="display:none;">
       <div class="bj-table">
-        <div class="bj-hand-label">DEALER</div>
-        <div class="bj-cards" id="dealerCards"></div>
-        <div class="bj-score" id="dealerScore"></div>
-        <div class="bj-hand-label" style="margin-top:12px;">YOUR HAND</div>
-        <div class="bj-cards" id="playerCards"></div>
-        <div class="bj-score" id="playerScore"></div>
+        <div class="bj-hand-label">DEALER</div><div class="bj-cards" id="dealerCards"></div><div class="bj-score" id="dealerScore"></div>
+        <div class="bj-hand-label" style="margin-top:12px;">YOUR HAND</div><div class="bj-cards" id="playerCards"></div><div class="bj-score" id="playerScore"></div>
       </div>
       <div class="bj-actions" id="bjActions" style="margin-bottom:12px;display:none;">
-        <button class="bj-btn" id="bjHit" onclick="bjAction('hit')">Hit</button>
-        <button class="bj-btn" id="bjStand" onclick="bjAction('stand')">Stand</button>
-        <button class="bj-btn" id="bjDouble" onclick="bjAction('double')">Double</button>
+        <button class="bj-btn" onclick="bjAction('hit')">Hit</button>
+        <button class="bj-btn" onclick="bjAction('stand')">Stand</button>
+        <button class="bj-btn" onclick="bjAction('double')">Double</button>
       </div>
-      <div class="input-row" id="bjBetRow">
-        <div class="input-group"><label class="input-label">BET AMOUNT (XRS)</label><input id="bjAmount" type="number" placeholder="10" min="1"/></div>
-      </div>
-      <div class="quick-amounts" id="bjQuick">
-        <span class="qa" onclick="setAmt('bjAmount',5)">5</span>
-        <span class="qa" onclick="setAmt('bjAmount',10)">10</span>
-        <span class="qa" onclick="setAmt('bjAmount',25)">25</span>
-        <span class="qa" onclick="setAmt('bjAmount',50)">50</span>
-      </div>
+      <div class="input-row" id="bjBetRow"><div class="input-group"><label class="input-label">BET (XRS)</label><input id="bjAmount" type="number" placeholder="10" min="0.01" step="0.01"/></div></div>
+      <div class="quick-amounts" id="bjQuick"><span class="qa" onclick="setAmt('bjAmount',5)">5</span><span class="qa" onclick="setAmt('bjAmount',10)">10</span><span class="qa" onclick="setAmt('bjAmount',25)">25</span><span class="qa" onclick="setAmt('bjAmount',50)">50</span></div>
     </div>
 
-    <!-- BET BUTTON + RESULT (shared) -->
     <button class="bet-btn" id="betBtn" onclick="placeBet()">PLACE BET</button>
-    <div class="result-box" id="resultBox">
-      <div class="result-title" id="resultTitle"></div>
-      <div class="result-detail" id="resultDetail"></div>
-      <div class="result-tx" id="resultTx" onclick="openTx()"></div>
-    </div>
+    <div class="result-box" id="resultBox"><div class="result-title" id="resultTitle"></div><div class="result-detail" id="resultDetail"></div><div class="result-tx" id="resultTx" onclick="openTx()"></div></div>
   </div>
 </div>
 
-<!-- TOAST CONTAINER -->
 <div class="toast-wrap" id="toastWrap"></div>
+<div class="bottom-bar"><p>&copy; 2026 XERIS.PLAY &middot; Provably Fair &middot; Powered by <a href="#">Xeris Blockchain</a></p></div>
 
-<!-- WALLET MODAL -->
-<div class="modal-overlay" id="walletModal" style="display:none;" onclick="if(event.target===this)closeWalletModal()">
-  <div class="modal">
-    <h3>🔗 CONNECT WALLET</h3>
-    <p>Connect your Xeris wallet to play.</p>
-    <button class="modal-btn" id="xerisWalletBtn" onclick="connectXerisWallet()" style="margin-bottom:8px;">CONNECT XERIS WALLET</button>
-    <div id="xerisWalletNotice" style="display:none;text-align:center;font-size:.78rem;color:var(--red);margin-bottom:10px;">Xeris Wallet not detected — open this page in the Xeris Wallet Browser</div>
-    <div style="text-align:center;font-size:.72rem;color:var(--muted);margin:10px 0 8px;">OR PASTE ADDRESS (view only)</div>
-    <input id="walletAddrInput" type="text" placeholder="XRS wallet address..." autocomplete="off"/>
-    <div class="modal-err" id="walletErr"></div>
-    <button class="modal-btn" onclick="confirmWalletConnect()" style="background:var(--bg3);color:var(--green);border:1px solid var(--green);margin-top:6px;">CONNECT ADDRESS</button>
-    <button class="modal-cancel" onclick="closeWalletModal()">Cancel</button>
-  </div>
-</div>
-
-<div class="bottom-bar">
-  <p>© 2026 XERIS.PLAY · Provably Fair · Powered by <a href="#">Xeris Blockchain</a> · 0% House Edge</p>
-</div>
-
+<script src="/xeris-tx.js"></script>
 <script>
-// ─── STATE ────────────────────────────────────────────────────────────────────
-const S = {
-  address: null,
-  walletType: null,  // 'xeris' or 'paste'
-  balance: 0,
-  currentGame: null,
-  rouletteBet: 'red',
-  lastTx: null,
-  bjState: null,   // blackjack active game state
-};
+const S = { address:null, balance:0, currentGame:null, rouletteBet:'red', lastTx:null, bjSeed:null };
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
-  loadStats();
-  loadTreasury();
-  // Try auto-reconnect via Xeris Wallet Browser
-  if (window.xeris) {
-    try {
-      const resp = await window.xeris.connect({ onlyIfTrusted: true });
-      const addr = parseXerisResponse(resp);
-      if (addr) await onConnected(addr, 'xeris');
-    } catch(e) {}
-  }
-  // Restore session from localStorage
-  if (!S.address) {
-    const saved = localStorage.getItem('xrs_addr');
-    const savedType = localStorage.getItem('xrs_type') || 'paste';
-    if (saved) await onConnected(saved, savedType);
-  }
+  loadStats(); loadTreasury();
+  if (window.xeris) { try { const addr = await window.xeris.connect(); if (addr) onConnected(addr); } catch(e) {} }
+  else document.getElementById('walletNotice').style.display = 'block';
 });
 
-async function loadStats() {
-  try {
-    const r = await fetch('/api/stats');
-    const d = await r.json();
-    if (d.gamesPlayed !== undefined) document.getElementById('statGames').textContent = d.gamesPlayed.toLocaleString();
-  } catch(e) {}
+async function loadStats() { try { const r = await fetch('/api/stats'); const d = await r.json(); document.getElementById('statGames').textContent = (d.gamesPlayed||0).toLocaleString(); } catch{} }
+async function loadTreasury() { try { const r = await fetch('/api/treasury'); const d = await r.json(); if (d.balance!==undefined) document.getElementById('statPot').textContent = (d.balance/1e9).toFixed(2)+' XRS'; } catch{} }
+
+async function connectWallet() {
+  if (S.address) { S.address=null; S.balance=0; document.getElementById('connectBtn').textContent='Connect Wallet'; document.getElementById('connectBtn').classList.remove('connected'); document.getElementById('balanceDisplay').style.display='none'; toast('Disconnected','info'); return; }
+  if (!window.xeris) { toast('Open in Xeris Wallet Browser','error'); return; }
+  try { const addr = await window.xeris.connect(); if (addr) onConnected(addr); else toast('Connection cancelled','error'); } catch(e) { toast('Failed: '+(e.message||e),'error'); }
 }
 
-async function loadTreasury() {
-  try {
-    const r = await fetch('/api/treasury');
-    const d = await r.json();
-    if (d.balance !== undefined) {
-      const xrs = (d.balance / 1e9).toFixed(2);
-      document.getElementById('statPot').textContent = xrs + ' XRS';
-    }
-    if (d.address) {
-      document.getElementById('treasuryAddr').textContent = d.address;
-    }
-  } catch(e) {
-    document.getElementById('treasuryAddr').textContent = 'Unavailable';
-  }
-}
-
-// ─── WALLET ───────────────────────────────────────────────────────────────────
-function parseXerisResponse(resp) {
-  if (!resp) return null;
-  if (typeof resp === 'string') return resp;
-  if (resp.publicKey) return resp.publicKey.toString();
-  if (resp.address) return resp.address;
-  if (window.xeris?.publicKey) return window.xeris.publicKey.toString();
-  if (window.xeris?.address) return window.xeris.address;
-  return null;
-}
-
-function openWalletModal() {
-  const notice = document.getElementById('xerisWalletNotice');
-  if (!window.xeris) notice.style.display = 'block';
-  else notice.style.display = 'none';
-  document.getElementById('walletModal').style.display = 'flex';
-}
-
-function closeWalletModal() {
-  document.getElementById('walletModal').style.display = 'none';
-  document.getElementById('walletErr').textContent = '';
-}
-
-async function connectXerisWallet() {
-  if (!window.xeris) {
-    document.getElementById('xerisWalletNotice').style.display = 'block';
-    return;
-  }
-  try {
-    const resp = await window.xeris.connect();
-    const addr = parseXerisResponse(resp);
-    if (!addr) throw new Error('No address returned');
-    closeWalletModal();
-    await onConnected(addr, 'xeris');
-    // Listen for changes
-    if (window.xeris.on) {
-      window.xeris.on('accountChanged', (newAddr) => {
-        const a = typeof newAddr === 'string' ? newAddr : newAddr?.toString();
-        if (a) onConnected(a, 'xeris');
-        else disconnectWallet();
-      });
-      window.xeris.on('disconnect', () => disconnectWallet());
-    }
-  } catch(e) {
-    document.getElementById('walletErr').textContent = 'Connection failed: ' + e.message;
-  }
-}
-
-async function confirmWalletConnect() {
-  const addr = document.getElementById('walletAddrInput').value.trim();
-  if (!addr || addr.length < 20) {
-    document.getElementById('walletErr').textContent = 'Enter a valid XRS address';
-    return;
-  }
-  closeWalletModal();
-  await onConnected(addr, 'paste');
-}
-
-async function onConnected(address, type) {
+async function onConnected(address) {
   S.address = address;
-  S.walletType = type || 'paste';
-  localStorage.setItem('xrs_addr', address);
-  localStorage.setItem('xrs_type', S.walletType);
-  const short = address.slice(0,6)+'...'+address.slice(-4);
-  const btn = document.getElementById('connectBtn');
-  btn.textContent = short;
-  btn.classList.add('connected');
-  btn.onclick = () => disconnectWallet();
+  document.getElementById('connectBtn').textContent = address.slice(0,6)+'...'+address.slice(-4);
+  document.getElementById('connectBtn').classList.add('connected');
   document.getElementById('balanceDisplay').style.display = 'block';
-  document.getElementById('depositStrip').style.display = 'flex';
+  document.getElementById('walletNotice').style.display = 'none';
   await refreshBalance();
-  toast('✓ Wallet connected' + (type === 'xeris' ? ' (signing enabled)' : ' (view only)'), 'success');
-}
-
-function disconnectWallet() {
-  if (S.walletType === 'xeris' && window.xeris) {
-    try { window.xeris.disconnect(); } catch {}
-  }
-  S.address = null;
-  S.walletType = null;
-  S.balance = 0;
-  localStorage.removeItem('xrs_addr');
-  localStorage.removeItem('xrs_type');
-  const btn = document.getElementById('connectBtn');
-  btn.textContent = '🔗 Connect Wallet';
-  btn.classList.remove('connected');
-  btn.onclick = () => openWalletModal();
-  document.getElementById('balanceDisplay').style.display = 'none';
-  toast('Wallet disconnected', 'info');
+  toast('Wallet connected','success');
 }
 
 async function refreshBalance() {
   if (!S.address) return;
-  try {
-    const r = await fetch('/api/balance/' + S.address);
-    const d = await r.json();
-    S.balance = d.balance || 0;
-    document.getElementById('balanceDisplay').textContent = S.balance.toFixed(4) + ' XRS';
-  } catch(e) {}
+  try { const r = await fetch('/api/xeris/balance/'+S.address); const d = await r.json(); S.balance = (d.balance||0)/1e9; document.getElementById('balanceDisplay').textContent = S.balance.toFixed(4)+' XRS'; } catch{}
 }
 
-// ─── GAME SELECTION ───────────────────────────────────────────────────────────
+async function buildAndSignBetTx(amountXRS) {
+  if (!window.xeris) throw new Error('Xeris Wallet not available');
+  const { unsignedTx } = await XerisTx.buildBetTx(S.address, amountXRS);
+  const signedTxBytes = await window.xeris.signTransaction(unsignedTx);
+  if (!signedTxBytes) throw new Error('Signing cancelled');
+  const sigBytes = XerisTx.extractSignature(signedTxBytes);
+  const sigBase58 = XerisTx.base58Encode(sigBytes);
+  const bytes = signedTxBytes instanceof Uint8Array ? signedTxBytes : new Uint8Array(signedTxBytes);
+  const txBase64 = btoa(String.fromCharCode(...bytes));
+  const sr = await fetch('/api/xeris/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tx_base64:txBase64}) });
+  const sd = await sr.json();
+  if (sd.error) throw new Error(sd.error);
+  return { txSignature: sigBase58 };
+}
+
 function selectGame(game) {
-  // Reset active cards
-  document.querySelectorAll('.game-card').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.game-card').forEach(c=>c.classList.remove('active'));
   document.getElementById('card-'+game).classList.add('active');
   S.currentGame = game;
-  // Show panel
   document.getElementById('gamePanel').style.display = 'block';
-  // Hide all game UIs
-  ['crash','dice','roulette','blackjack'].forEach(g => document.getElementById('game-'+g).style.display='none');
+  ['crash','dice','roulette','blackjack'].forEach(g=>document.getElementById('game-'+g).style.display='none');
   document.getElementById('game-'+game).style.display = 'block';
-  // Reset result
   hideResult();
-  // Set bet button text
-  const labels = {crash:'🚀 PLACE BET',dice:'🎲 ROLL DICE',roulette:'🎡 SPIN',blackjack:'🃏 DEAL CARDS'};
-  document.getElementById('betBtn').textContent = labels[game] || 'PLACE BET';
-  // Show/hide BJ actions
+  const labels = {crash:'PLACE BET',dice:'ROLL DICE',roulette:'SPIN',blackjack:'DEAL CARDS'};
+  document.getElementById('betBtn').textContent = labels[game];
   document.getElementById('bjActions').style.display = 'none';
   document.getElementById('bjBetRow').style.display = 'flex';
   document.getElementById('bjQuick').style.display = 'flex';
   document.getElementById('betBtn').style.display = 'block';
-  // Scroll to panel
-  setTimeout(() => document.getElementById('gamePanel').scrollIntoView({behavior:'smooth',block:'start'}), 100);
+  setTimeout(()=>document.getElementById('gamePanel').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
 
-// ─── PLACE BET ────────────────────────────────────────────────────────────────
 async function placeBet() {
-  if (!S.address) { openWalletModal(); return; }
-  const game = S.currentGame;
-  if (!game) return;
-
-  // Get params per game
+  if (!S.address) { connectWallet(); return; }
+  const game = S.currentGame; if (!game) return;
   let amount, betType, betValue;
-  if (game === 'crash') {
-    amount = parseFloat(document.getElementById('crashAmount').value);
-    betType = 'auto';
-    betValue = document.getElementById('crashTarget').value || '2.00';
-  } else if (game === 'dice') {
-    amount = parseFloat(document.getElementById('diceAmount').value);
-    betType = document.getElementById('diceBetType').value;
-    betValue = document.getElementById('diceBetValue').value || '50';
-  } else if (game === 'roulette') {
-    amount = parseFloat(document.getElementById('rouletteAmount').value);
-    betType = S.rouletteBet;
-    betValue = S.rouletteBet === 'number' ? (document.getElementById('rouletteNumber').value || '7') : betType;
-  } else if (game === 'blackjack') {
-    amount = parseFloat(document.getElementById('bjAmount').value);
-    betType = 'deal';
-    betValue = '0';
-  }
+  if (game==='crash') { amount=parseFloat(document.getElementById('crashAmount').value); betType='auto'; betValue=document.getElementById('crashTarget').value||'2.00'; }
+  else if (game==='dice') { amount=parseFloat(document.getElementById('diceAmount').value); betType=document.getElementById('diceBetType').value; betValue=document.getElementById('diceBetValue').value||'50'; }
+  else if (game==='roulette') { amount=parseFloat(document.getElementById('rouletteAmount').value); betType=S.rouletteBet; betValue=S.rouletteBet==='number'?(document.getElementById('rouletteNumber').value||'7'):betType; }
+  else if (game==='blackjack') { amount=parseFloat(document.getElementById('bjAmount').value); betType='deal'; betValue='0'; }
+  if (!amount||amount<0.01) { toast('Min bet 0.01 XRS','error'); return; }
+  if (amount>S.balance) { toast('Insufficient balance','error'); return; }
 
-  if (!amount || amount < 1) { toast('Enter a valid bet amount (min 1 XRS)', 'error'); return; }
-  if (amount > S.balance) { toast('Insufficient balance. Please deposit XRS first.', 'error'); openDepositPanel(); return; }
-
-  setBetLoading(true);
-  hideResult();
-
+  setBetLoading(true); hideResult();
   try {
-    // POST to /api/bet (uses server-side balance)
-    toast('Placing bet...', 'info');
-    const r = await fetch('/api/bet', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        game, betType, betValue: String(betValue),
-        amount, playerAddress: S.address,
-        betTxSignature: 'bet_' + Date.now(),
-        username: S.address.slice(0,6)+'...'+S.address.slice(-4)
-      })
-    });
+    toast('Sign transaction in wallet...','info');
+    const { txSignature } = await buildAndSignBetTx(amount);
+    toast('Verifying on-chain...','info');
+    const r = await fetch('/api/casino/bet', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({game,betType,betValue:String(betValue),amount,playerAddress:S.address,txSignature}) });
     const d = await r.json();
-    if (!r.ok || d.error) throw new Error(d.error || 'Bet failed');
-
-    // Handle result per game
-    handleResult(game, d);
+    if (!r.ok||d.error) throw new Error(d.error||'Bet failed');
+    await animateAndShow(game, d);
     await refreshBalance();
-
-  } catch(e) {
-    toast(e.message || 'Bet failed', 'error');
-    showResult(false, 'Error', e.message, null);
-  }
+  } catch(e) { toast(e.message||'Bet failed','error'); showResult(false,'Error',e.message,null); }
   setBetLoading(false);
 }
 
-function handleResult(game, d) {
-  const won = d.payout > 0;
-  S.lastTx = d.payoutTxSignature || d.betTxSignature || null;
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
 
-  if (game === 'crash') {
-    const cp = d.result?.crashPoint?.toFixed(2) || '?';
-    document.getElementById('crashMult').textContent = cp + '×';
-    document.getElementById('crashMult').className = 'crash-mult ' + (won ? 'won' : 'crashed');
-    document.getElementById('crashLabel').textContent = won ? 'CASHED OUT!' : 'CRASHED';
+async function animateAndShow(game, d) {
+  const won = d.payout>0; const isPush = d.result?.status==='push';
+  S.lastTx = d.payoutTxSignature||d.txSignature||null;
+
+  if (game==='crash') {
+    await animateCrash(d.result?.crashPoint||1);
+    const cp = (d.result?.crashPoint||1).toFixed(2);
     addCrashHistory(parseFloat(cp));
-    showResult(won, won ? '🚀 WIN! +'+d.payoutAmount+' XRS' : '💥 CRASHED at '+cp+'×',
-      'Bet: '+d.betAmount+' XRS', d.payoutTxSignature);
-  } else if (game === 'dice') {
-    const roll = d.result?.roll ?? '?';
-    document.getElementById('diceResult').textContent = roll;
-    showResult(won, won ? '🎲 WIN! +'+d.payoutAmount+' XRS' : '🎲 Rolled '+roll,
-      'You needed '+document.getElementById('diceBetType').value+' '+document.getElementById('diceBetValue').value, d.payoutTxSignature);
-  } else if (game === 'roulette') {
-    const num = d.result?.number ?? '?';
-    const col = d.result?.color || 'black';
-    const el = document.getElementById('rouletteResult');
-    el.textContent = num;
-    el.className = 'roulette-result ' + col;
-    document.getElementById('rouletteColor').textContent = col.toUpperCase() + (num % 2 === 0 ? ' · EVEN' : ' · ODD');
-    showResult(won, won ? '🎡 WIN! +'+d.payoutAmount+' XRS' : '🎡 '+col.toUpperCase()+' '+num,
-      'Bet: '+d.betAmount+' XRS on '+S.rouletteBet, d.payoutTxSignature);
-  } else if (game === 'blackjack') {
+    showResult(won, won?'WIN! +'+d.payoutAmount+' XRS':'CRASHED at '+cp+'x', 'Bet: '+d.betAmount+' XRS', d.payoutTxSignature);
+  } else if (game==='dice') {
+    await animateDice(d.result?.roll||0);
+    showResult(won, won?'WIN! +'+d.payoutAmount+' XRS':'Rolled '+(d.result?.roll||'?'), 'Needed '+document.getElementById('diceBetType').value+' '+document.getElementById('diceBetValue').value, d.payoutTxSignature);
+  } else if (game==='roulette') {
+    await animateRoulette(d.result?.number??0, d.result?.color||'black');
+    showResult(won, won?'WIN! +'+d.payoutAmount+' XRS':'No luck', 'Bet: '+d.betAmount+' XRS on '+S.rouletteBet, d.payoutTxSignature);
+  } else if (game==='blackjack') {
+    await animateCards(d);
     renderBlackjack(d);
   }
 }
 
-// ─── BLACKJACK ────────────────────────────────────────────────────────────────
-function renderBlackjack(d) {
-  S.bjState = d;
-  const result = d.result || {};
-  const playerHand = result.playerHand || [];
-  const dealerHand = result.dealerHand || [];
-  const gameOver = result.status !== 'playing';
-
-  renderCards('playerCards', playerHand);
-  renderCards('dealerCards', dealerHand, !gameOver);
-  document.getElementById('playerScore').textContent = 'Score: ' + (result.playerScore || handValue(playerHand));
-  document.getElementById('dealerScore').textContent = gameOver ? 'Score: ' + (result.dealerScore || handValue(dealerHand)) : 'Score: ?';
-
-  document.getElementById('bjBetRow').style.display = gameOver ? 'flex' : 'none';
-  document.getElementById('bjQuick').style.display = gameOver ? 'flex' : 'none';
-  document.getElementById('betBtn').style.display = gameOver ? 'block' : 'none';
-  document.getElementById('bjActions').style.display = gameOver ? 'none' : 'flex';
-
-  if (gameOver) {
-    const won = d.payout > 0;
-    showResult(won, won ? '🃏 WIN! +'+d.payoutAmount+' XRS' : '🃏 ' + (result.status || 'Dealer wins'),
-      'Bet: '+d.betAmount+' XRS', d.payoutTxSignature);
+async function animateCrash(crashPoint) {
+  const el=document.getElementById('crashMult'), label=document.getElementById('crashLabel');
+  el.className='crash-mult'; label.textContent='FLYING...';
+  const target=parseFloat(crashPoint), steps=25, stepTime=60;
+  for (let i=0;i<=steps;i++) {
+    const eased=1-Math.pow(1-i/steps,2);
+    el.textContent=(1+(target-1)*eased).toFixed(2)+'x';
+    el.classList.add('animating'); await sleep(stepTime); el.classList.remove('animating');
   }
+  el.textContent=target.toFixed(2)+'x';
+  const won=target>=(parseFloat(document.getElementById('crashTarget').value)||2);
+  el.className='crash-mult '+(won?'won':'crashed');
+  label.textContent=won?'CASHED OUT!':'CRASHED';
+}
+
+async function animateDice(finalRoll) {
+  const el=document.getElementById('diceResult');
+  for (let i=0;i<20;i++) { el.textContent=Math.floor(Math.random()*100)+1; el.classList.add('rolling'); await sleep(50+i*5); el.classList.remove('rolling'); }
+  el.textContent=finalRoll;
+}
+
+async function animateRoulette(finalNum, finalColor) {
+  const el=document.getElementById('rouletteResult'), colorEl=document.getElementById('rouletteColor');
+  const REDS=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+  for (let i=0;i<30;i++) { const n=Math.floor(Math.random()*37); const c=n===0?'green':REDS.has(n)?'red':'black'; el.textContent=n; el.className='roulette-result '+c+' spinning'; colorEl.textContent=c.toUpperCase(); await sleep(60+i*8); }
+  el.textContent=finalNum; el.className='roulette-result '+finalColor;
+  colorEl.textContent=finalColor.toUpperCase()+(finalNum>0?(finalNum%2===0?' · EVEN':' · ODD'):'');
+}
+
+async function animateCards(d) {
+  const r=d.result||{}, pH=r.playerHand||[], dH=r.dealerHand||[], over=d.gameOver!==undefined?d.gameOver:r.status!=='playing';
+  document.getElementById('playerCards').innerHTML=''; document.getElementById('dealerCards').innerHTML='';
+  const suits={'H':'\u2665','D':'\u2666','C':'\u2663','S':'\u2660'};
+  function mkCard(c,hidden) { const div=document.createElement('div'); if(hidden){div.className='card hidden';div.textContent='?';}else{const v=c.slice(0,-1),s=c.slice(-1);div.className='card '+((s==='H'||s==='D')?'red':'black');div.textContent=v+(suits[s]||s);} return div; }
+  const cards=[]; if(pH[0])cards.push({c:pH[0],el:'playerCards',h:false}); if(dH[0])cards.push({c:dH[0],el:'dealerCards',h:false}); if(pH[1])cards.push({c:pH[1],el:'playerCards',h:false}); if(dH[1])cards.push({c:dH[1],el:'dealerCards',h:!over});
+  for (const item of cards) { const cd=mkCard(item.c,item.h); document.getElementById(item.el).appendChild(cd); await sleep(50); cd.classList.add('dealt'); await sleep(200); }
+  for (let i=2;i<pH.length;i++) { const cd=mkCard(pH[i],false); document.getElementById('playerCards').appendChild(cd); await sleep(50); cd.classList.add('dealt'); await sleep(200); }
+  if(over) for (let i=2;i<dH.length;i++) { const cd=mkCard(dH[i],false); document.getElementById('dealerCards').appendChild(cd); await sleep(50); cd.classList.add('dealt'); await sleep(200); }
+}
+
+function renderBlackjack(d) {
+  S.bjSeed=d.seed||S.bjSeed; const r=d.result||{}, over=d.gameOver!==undefined?d.gameOver:r.status!=='playing';
+  document.getElementById('playerScore').textContent='Score: '+(r.playerScore||'?');
+  document.getElementById('dealerScore').textContent=over?'Score: '+(r.dealerScore||'?'):'Score: ?';
+  document.getElementById('bjBetRow').style.display=over?'flex':'none';
+  document.getElementById('bjQuick').style.display=over?'flex':'none';
+  document.getElementById('betBtn').style.display=over?'block':'none';
+  document.getElementById('bjActions').style.display=over?'none':'flex';
+  if (over) { const won=d.payout>0, push=r.status==='push'; showResult(won||push, won?'WIN! +'+d.payoutAmount+' XRS':push?'PUSH — Bet Refunded':(r.status||'Dealer wins'), 'Bet: '+d.betAmount+' XRS', d.payoutTxSignature, push); }
 }
 
 async function bjAction(action) {
-  // Hit/Stand/Double in blackjack
   setBetLoading(true);
   try {
-    const r = await fetch('/api/bet', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        game: 'blackjack', betType: action,
-        betValue: '0', amount: 0,
-        playerAddress: S.address,
-        betTxSignature: S.bjState?.seed || ('bj_'+Date.now()),
-        username: S.address.slice(0,6)+'...'+S.address.slice(-4)
-      })
-    });
-    const d = await r.json();
-    if (!r.ok || d.error) throw new Error(d.error || 'Action failed');
-    renderBlackjack(d);
-    await refreshBalance();
-  } catch(e) { toast(e.message, 'error'); }
+    let txSignature=null;
+    if (action==='double') { toast('Sign double-down tx...','info'); const betAmt=parseFloat(document.getElementById('bjAmount').value)||0; const res=await buildAndSignBetTx(betAmt); txSignature=res.txSignature; }
+    const r=await fetch('/api/casino/bj-action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,seed:S.bjSeed,playerAddress:S.address,txSignature})});
+    const d=await r.json(); if(!r.ok||d.error)throw new Error(d.error||'Failed');
+    await animateCards(d); renderBlackjack(d); await refreshBalance();
+  } catch(e) { toast(e.message,'error'); }
   setBetLoading(false);
 }
 
-function renderCards(containerId, hand, hideSecond) {
-  const el = document.getElementById(containerId);
-  if (!hand || !hand.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.8rem;padding:10px;">No cards</div>'; return; }
-  const suits = {'H':'♥','D':'♦','C':'♣','S':'♠'};
-  const isRed = s => s==='H'||s==='D';
-  el.innerHTML = hand.map((c,i) => {
-    if (hideSecond && i === 1) return '<div class="card hidden">?</div>';
-    const [val, suit] = [c.slice(0,-1), c.slice(-1)];
-    const sym = suits[suit] || suit;
-    return `<div class="card ${isRed(suit)?'red':'black'}">${val}${sym}</div>`;
-  }).join('');
-}
-
-function handValue(hand) {
-  if (!hand || !hand.length) return 0;
-  let total = 0, aces = 0;
-  hand.forEach(c => {
-    const v = c.slice(0,-1);
-    if (['J','Q','K'].includes(v)) total += 10;
-    else if (v === 'A') { total += 11; aces++; }
-    else total += parseInt(v);
-  });
-  while (total > 21 && aces > 0) { total -= 10; aces--; }
-  return total;
-}
-
-// ─── DEPOSIT ──────────────────────────────────────────────────────────────────
-function openDepositPanel() {
-  document.getElementById('depositPanel').style.display = 'block';
-  document.getElementById('depositPanel').scrollIntoView({behavior:'smooth'});
-}
-function closeDepositPanel() { document.getElementById('depositPanel').style.display = 'none'; }
-
-async function doDeposit() {
-  const txSig = document.getElementById('depTxSig').value.trim();
-  const amount = parseFloat(document.getElementById('depAmount').value);
-  if (!txSig || txSig.length < 10) { toast('Enter a valid transaction signature', 'error'); return; }
-  if (!amount || amount < 1) { toast('Enter a valid amount', 'error'); return; }
-  if (!S.address) { openWalletModal(); return; }
-
-  const btn = document.querySelector('#depositPanel .bet-btn');
-  btn.disabled = true; btn.textContent = 'Confirming...';
-
-  try {
-    const r = await fetch('/api/deposit', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ playerAddress: S.address, txSignature: txSig, amount, username: S.address })
-    });
-    const d = await r.json();
-    if (!r.ok || d.error) throw new Error(d.error || 'Deposit failed');
-    S.balance = d.newBalance || S.balance + amount * 0.98;
-    document.getElementById('balanceDisplay').textContent = S.balance.toFixed(4) + ' XRS';
-    const res = document.getElementById('depResult');
-    res.style.display = 'block';
-    res.className = 'result-box win';
-    res.innerHTML = '<div class="result-title win">✓ Deposit Confirmed</div><div class="result-detail">+'+d.credited+' XRS credited (2% fee)</div>';
-    toast('Deposit confirmed! +' + d.credited + ' XRS', 'success');
-    document.getElementById('depTxSig').value = '';
-  } catch(e) {
-    toast(e.message || 'Deposit failed', 'error');
-  }
-  btn.disabled = false; btn.textContent = 'CONFIRM DEPOSIT';
-}
-
-// ─── UI HELPERS ───────────────────────────────────────────────────────────────
-function setBetLoading(loading) {
-  const btn = document.getElementById('betBtn');
-  btn.disabled = loading;
-  if (loading) {
-    btn.innerHTML = '<span class="spinner"></span>Processing...';
-    btn.classList.add('loading');
-  } else {
-    const labels = {crash:'🚀 PLACE BET',dice:'🎲 ROLL DICE',roulette:'🎡 SPIN',blackjack:'🃏 DEAL CARDS'};
-    btn.textContent = labels[S.currentGame] || 'PLACE BET';
-    btn.classList.remove('loading');
-  }
-}
-
-function showResult(won, title, detail, txSig) {
-  const box = document.getElementById('resultBox');
-  box.style.display = 'block';
-  box.className = 'result-box ' + (won ? 'win' : 'lose');
-  document.getElementById('resultTitle').textContent = title;
-  document.getElementById('resultTitle').className = 'result-title ' + (won ? 'win' : 'lose');
-  document.getElementById('resultDetail').textContent = detail || '';
-  const txEl = document.getElementById('resultTx');
-  if (txSig) {
-    txEl.textContent = '📎 Tx: ' + txSig.slice(0,20) + '...';
-    S.lastTx = txSig;
-  } else { txEl.textContent = ''; }
-}
-
-function hideResult() {
-  document.getElementById('resultBox').style.display = 'none';
-}
-
-function openTx() {
-  if (S.lastTx) window.open('https://explorer.xerisweb.com/v2/tx/'+S.lastTx, '_blank');
-}
-
-function setAmt(id, val) {
-  document.getElementById(id).value = val;
-  if (id === 'crashAmount') updateCrashPayout();
-}
-
-function updateCrashPayout() {
-  const a = parseFloat(document.getElementById('crashAmount').value) || 0;
-  const t = parseFloat(document.getElementById('crashTarget').value) || 2;
-  document.getElementById('crashPayout').textContent = a ? (a * t).toFixed(2) + ' XRS' : '—';
-}
-
-function updateDiceInfo() {
-  const type = document.getElementById('diceBetType').value;
-  const val = parseInt(document.getElementById('diceBetValue').value) || 50;
-  let chance, payout;
-  if (type === 'exact') { chance = 1; payout = 99; }
-  else if (type === 'over') { chance = 100 - val; payout = +(99 / (100 - val)).toFixed(2); }
-  else { chance = val - 1; payout = +(99 / (val - 1)).toFixed(2); }
-  document.getElementById('diceRange').textContent = `Roll ${type} ${val}`;
-  document.getElementById('dicePayout').textContent = `Win chance: ${chance}% · Payout: ${payout}×`;
-}
-
-function selectRoulettebet(type) {
-  S.rouletteBet = type;
-  document.querySelectorAll('.rbet').forEach(b => b.classList.remove('sel'));
-  document.getElementById('rbet-'+type).classList.add('sel');
-  document.getElementById('rouletteNumberRow').style.display = type === 'number' ? 'flex' : 'none';
-}
-
-function addCrashHistory(val) {
-  const hist = document.getElementById('crashHistory');
-  const cls = val < 2 ? 'low' : val < 10 ? 'mid' : 'high';
-  const span = document.createElement('span');
-  span.className = 'ch-item ' + cls;
-  span.textContent = val.toFixed(2) + '×';
-  hist.insertBefore(span, hist.firstChild);
-  if (hist.children.length > 12) hist.removeChild(hist.lastChild);
-}
-
-// ─── TOAST ────────────────────────────────────────────────────────────────────
-function toast(msg, type='info') {
-  const wrap = document.getElementById('toastWrap');
-  const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.textContent = msg;
-  wrap.appendChild(t);
-  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 2800);
-}
-
-// ─── KEY HANDLER ──────────────────────────────────────────────────────────────
-document.getElementById('walletAddrInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') confirmWalletConnect();
-});
+function setBetLoading(on) { const b=document.getElementById('betBtn'); b.disabled=on; if(on){b.innerHTML='<span class="spinner"></span>Processing...';b.classList.add('loading');}else{const l={crash:'PLACE BET',dice:'ROLL DICE',roulette:'SPIN',blackjack:'DEAL CARDS'};b.textContent=l[S.currentGame]||'PLACE BET';b.classList.remove('loading');} }
+function showResult(won,title,detail,tx,isPush) { const b=document.getElementById('resultBox'),cls=isPush?'push':(won?'win':'lose'); b.style.display='block'; b.className='result-box '+cls+' flash-'+(isPush?'win':(won?'win':'lose')); document.getElementById('resultTitle').textContent=title; document.getElementById('resultTitle').className='result-title '+cls; document.getElementById('resultDetail').textContent=detail||''; const t=document.getElementById('resultTx'); if(tx){t.textContent='Tx: '+tx.slice(0,20)+'...';S.lastTx=tx;}else t.textContent=''; }
+function hideResult() { document.getElementById('resultBox').style.display='none'; }
+function openTx() { if(S.lastTx) window.open('https://explorer.xerisweb.com/v2/tx/'+S.lastTx,'_blank'); }
+function setAmt(id,v) { document.getElementById(id).value=v; if(id==='crashAmount')updateCrashPayout(); }
+function updateCrashPayout() { const a=parseFloat(document.getElementById('crashAmount').value)||0, t=parseFloat(document.getElementById('crashTarget').value)||2; document.getElementById('crashPayout').textContent=a?(a*t).toFixed(2)+' XRS':'--'; }
+function updateDiceInfo() { const type=document.getElementById('diceBetType').value, val=parseInt(document.getElementById('diceBetValue').value)||50; let ch,p; if(type==='exact'){ch=1;p=99;}else if(type==='over'){ch=100-val;p=+(99/Math.max(1,100-val)).toFixed(2);}else{ch=val-1;p=+(99/Math.max(1,val-1)).toFixed(2);} document.getElementById('diceRange').textContent='Roll '+type+' '+val; document.getElementById('dicePayout').textContent='Win chance: '+ch+'% · '+p+'x'; }
+function selectRouletteBet(type) { S.rouletteBet=type; document.querySelectorAll('.rbet').forEach(b=>b.classList.remove('sel')); document.getElementById('rbet-'+type).classList.add('sel'); document.getElementById('rouletteNumberRow').style.display=type==='number'?'flex':'none'; }
+function addCrashHistory(val) { const h=document.getElementById('crashHistory'),cls=val<2?'low':val<10?'mid':'high',s=document.createElement('span'); s.className='ch-item '+cls; s.textContent=val.toFixed(2)+'x'; h.insertBefore(s,h.firstChild); if(h.children.length>12)h.removeChild(h.lastChild); }
+function toast(msg,type='info') { const w=document.getElementById('toastWrap'),t=document.createElement('div'); t.className='toast '+type; t.textContent=msg; w.appendChild(t); setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},2800); }
 </script>
 </body>
 </html>

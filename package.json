@@ -1,7 +1,7 @@
 {
   "name": "xeris-play",
-  "version": "4.0.0",
-  "description": "SOLPRIZE — On-chain lottery on Xeris blockchain",
+  "version": "5.0.0",
+  "description": "XERIS.PLAY — On-chain lottery & casino on Xeris blockchain",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -10,7 +10,8 @@
   "dependencies": {
     "express": "^4.22.1",
     "tweetnacl": "^1.0.3",
-    "bs58": "^4.0.1"
+    "bs58": "^4.0.1",
+    "express-rate-limit": "^7.1.5"
   },
   "engines": {
     "node": ">=18"
