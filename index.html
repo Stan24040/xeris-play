@@ -374,53 +374,55 @@ async function walletSign(unsignedTx, messageBytes) {
   const w = window.xeris;
   if (!w) throw new Error('Xeris Wallet not available');
 
-  let signedTxBytes = null;
+  // Try each signing method in order
+  const methods = ['signTransaction', 'sign', 'signMessage', 'signAndSendTransaction'];
+  let result = null;
+  let methodUsed = null;
 
-  // Try signTransaction (returns full signed tx bytes)
-  if (typeof w.signTransaction === 'function') {
-    signedTxBytes = await w.signTransaction(unsignedTx);
-  }
-  // Try sign (might return signature only or full tx)
-  else if (typeof w.sign === 'function') {
-    signedTxBytes = await w.sign(unsignedTx);
-  }
-  // Try signMessage (returns just the signature)
-  else if (typeof w.signMessage === 'function') {
-    const sig = await w.signMessage(messageBytes);
-    if (sig) {
-      const sigArr = sig instanceof Uint8Array ? sig : new Uint8Array(sig);
-      if (sigArr.length === 64) {
-        // Reassemble: compact_u16(1) + signature + message
-        signedTxBytes = XerisTx.concat([XerisTx.encodeCompactU16(1), sigArr, messageBytes]);
-      } else {
-        signedTxBytes = sig;
-      }
+  for (const m of methods) {
+    if (typeof w[m] === 'function') {
+      methodUsed = m;
+      result = await w[m](m === 'signMessage' ? messageBytes : unsignedTx);
+      break;
     }
   }
-  // Try signAndSendTransaction (sends it too, returns signature string)
-  else if (typeof w.signAndSendTransaction === 'function') {
-    const result = await w.signAndSendTransaction(unsignedTx);
-    const sig = typeof result === 'string' ? result : (result?.signature || result?.txid || null);
-    if (sig) return { signedBytes: null, txSignature: sig, alreadySent: true };
-    throw new Error('signAndSendTransaction returned no signature');
-  }
-  else {
-    // List available methods to help debug
-    const methods = Object.keys(w).filter(k => typeof w[k] === 'function').join(', ');
-    throw new Error('No signing method found on wallet. Available: ' + methods);
+
+  if (!methodUsed) {
+    const available = Object.keys(w).filter(k => typeof w[k] === 'function').join(', ');
+    throw new Error('No signing method on wallet. Available: ' + available);
   }
 
-  if (!signedTxBytes) throw new Error('Signing cancelled');
+  if (!result) throw new Error('Signing cancelled');
 
-  // Handle if wallet returned just a 64-byte signature
-  const arr = signedTxBytes instanceof Uint8Array ? signedTxBytes : new Uint8Array(signedTxBytes);
+  // Wallet returned a string → it already signed+sent, string is the tx signature
+  if (typeof result === 'string') {
+    return { signedBytes: null, txSignature: result, alreadySent: true };
+  }
+
+  // Wallet returned an object with signature/txid → already sent
+  if (typeof result === 'object' && !(result instanceof Uint8Array) && !ArrayBuffer.isView(result) && !Array.isArray(result)) {
+    const sig = result.signature || result.txid || result.hash || result.id;
+    if (typeof sig === 'string') return { signedBytes: null, txSignature: sig, alreadySent: true };
+    // Maybe it has a serialized tx in a property
+    const txBytes = result.signedTransaction || result.transaction || result.data;
+    if (txBytes instanceof Uint8Array || Array.isArray(txBytes)) {
+      result = txBytes;
+    } else {
+      const available = Object.keys(result).join(', ');
+      throw new Error('Unexpected wallet response keys: ' + available);
+    }
+  }
+
+  // At this point result should be bytes (Uint8Array or array-like)
+  const arr = result instanceof Uint8Array ? result : new Uint8Array(result);
+
+  // 64 bytes = just the signature, reassemble full tx
   if (arr.length === 64) {
-    // It's just the signature — reassemble full tx
     const full = XerisTx.concat([XerisTx.encodeCompactU16(1), arr, messageBytes]);
     return { signedBytes: full, txSignature: XerisTx.base58Encode(arr) };
   }
 
-  // Full signed tx returned — extract signature from bytes 1..65
+  // Full signed tx — extract signature from bytes 1..65
   const sigBytes = XerisTx.extractSignature(arr);
   return { signedBytes: arr, txSignature: XerisTx.base58Encode(sigBytes) };
 }
