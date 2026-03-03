@@ -161,10 +161,17 @@ async function fetchBlockhash() {
     });
     const data = await res.json();
     const bh = data?.result?.value?.blockhash || data?.result?.blockhash;
-    if (typeof bh === 'string' && bh.length >= 64) {
-      const bytes = Buffer.alloc(32);
-      for (let i = 0; i < 32; i++) bytes[i] = parseInt(bh.substr(i * 2, 2), 16);
-      return bytes;
+    if (typeof bh === 'string') {
+      // Hex-encoded blockhash (64 hex chars = 32 bytes)
+      if (bh.length >= 64 && /^[0-9a-fA-F]+$/.test(bh)) {
+        const bytes = Buffer.alloc(32);
+        for (let i = 0; i < 32; i++) bytes[i] = parseInt(bh.substr(i * 2, 2), 16);
+        return bytes;
+      }
+      // Base58-encoded blockhash (32-44 chars)
+      if (bh.length >= 32 && bh.length <= 44) {
+        try { return XerisTx.base58DecodePubkey(bh); } catch {}
+      }
     }
   } catch {}
   try {
@@ -434,7 +441,9 @@ app.post('/api/xeris/submit', asyncHandler(async (req, res) => {
   const r = await fetch(`${XERIS_NET}/submit`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(bodyStr).toString() }, body: bodyStr,
   });
-  res.json(await r.json());
+  const data = await r.json();
+  if (data.error) console.warn('Submit rejected by node:', data.error);
+  res.json(data);
 }));
 
 app.get('/api/xeris/balance/:address', asyncHandler(async (req, res) => {

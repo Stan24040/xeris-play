@@ -10,7 +10,8 @@ const XerisTx = (() => {
     if (!str.length) return new Uint8Array(0);
     const bytes = [0];
     for (let i = 0; i < str.length; i++) {
-      const c = BASE_MAP[str.charCodeAt(i)]; if (c === 255) throw new Error('Invalid base58');
+      const c = BASE_MAP[str.charCodeAt(i)];
+      if (c === 255) throw new Error('Invalid base58 character "' + str[i] + '" at position ' + i + ' in: ' + str.slice(0, 20) + (str.length > 20 ? '...' : ''));
       let carry = c; for (let j = 0; j < bytes.length; j++) { carry += bytes[j]*58; bytes[j]=carry&0xff; carry>>=8; }
       while (carry>0) { bytes.push(carry&0xff); carry>>=8; }
     }
@@ -54,17 +55,30 @@ const XerisTx = (() => {
   async function fetchRecentBlockhash() {
     const res = await fetch('/api/xeris/blockhash'); const data = await res.json();
     const bh = data?.result?.value?.blockhash || data?.result?.blockhash;
-    if (typeof bh==='string' && bh.length>=64) { const b=new Uint8Array(32); for(let i=0;i<32;i++)b[i]=parseInt(bh.substr(i*2,2),16); return b; }
-    const blocks = Array.isArray(data)?data:data?.blocks||[];
-    if (blocks.length>0 && Array.isArray(blocks[0].hash) && blocks[0].hash.length===32) return new Uint8Array(blocks[0].hash);
-    throw new Error('Could not fetch blockhash');
+    if (typeof bh === 'string') {
+      // Hex-encoded blockhash (64 hex chars = 32 bytes)
+      if (bh.length >= 64 && /^[0-9a-fA-F]+$/.test(bh)) {
+        const b = new Uint8Array(32); for (let i = 0; i < 32; i++) b[i] = parseInt(bh.substr(i * 2, 2), 16); return b;
+      }
+      // Base58-encoded blockhash (32-44 chars)
+      if (bh.length >= 32 && bh.length <= 44) {
+        try { return decodePubkey(bh); } catch {}
+      }
+    }
+    const blocks = Array.isArray(data) ? data : data?.blocks || [];
+    if (blocks.length > 0 && Array.isArray(blocks[0].hash) && blocks[0].hash.length === 32) return new Uint8Array(blocks[0].hash);
+    throw new Error('Could not fetch blockhash (got: ' + JSON.stringify(bh || data).slice(0, 100) + ')');
   }
 
   async function buildBetTx(fromAddress, amountXRS) {
+    const addr = (fromAddress || '').trim();
+    if (!addr) throw new Error('No wallet address provided');
     const amountLamports = BigInt(Math.floor(amountXRS*1e9));
     const blockhash = await fetchRecentBlockhash();
-    const signerPubkey = decodePubkey(fromAddress);
-    const instructionData = encodeNativeTransfer(fromAddress, TREASURY_ADDRESS, amountLamports);
+    let signerPubkey;
+    try { signerPubkey = decodePubkey(addr); }
+    catch (e) { throw new Error('Cannot decode wallet address: ' + e.message); }
+    const instructionData = encodeNativeTransfer(addr, TREASURY_ADDRESS, amountLamports);
     const messageBytes = buildMessage(signerPubkey, instructionData, blockhash);
     return { unsignedTx: buildUnsignedTx(messageBytes), messageBytes };
   }
