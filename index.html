@@ -368,6 +368,64 @@ async function refreshLotteryState() {
 }
 
 // ══════════════════════════════════════════════
+//  WALLET SIGNING (tries multiple method names)
+// ══════════════════════════════════════════════
+async function walletSign(unsignedTx, messageBytes) {
+  const w = window.xeris;
+  if (!w) throw new Error('Xeris Wallet not available');
+
+  let signedTxBytes = null;
+
+  // Try signTransaction (returns full signed tx bytes)
+  if (typeof w.signTransaction === 'function') {
+    signedTxBytes = await w.signTransaction(unsignedTx);
+  }
+  // Try sign (might return signature only or full tx)
+  else if (typeof w.sign === 'function') {
+    signedTxBytes = await w.sign(unsignedTx);
+  }
+  // Try signMessage (returns just the signature)
+  else if (typeof w.signMessage === 'function') {
+    const sig = await w.signMessage(messageBytes);
+    if (sig) {
+      const sigArr = sig instanceof Uint8Array ? sig : new Uint8Array(sig);
+      if (sigArr.length === 64) {
+        // Reassemble: compact_u16(1) + signature + message
+        signedTxBytes = XerisTx.concat([XerisTx.encodeCompactU16(1), sigArr, messageBytes]);
+      } else {
+        signedTxBytes = sig;
+      }
+    }
+  }
+  // Try signAndSendTransaction (sends it too, returns signature string)
+  else if (typeof w.signAndSendTransaction === 'function') {
+    const result = await w.signAndSendTransaction(unsignedTx);
+    const sig = typeof result === 'string' ? result : (result?.signature || result?.txid || null);
+    if (sig) return { signedBytes: null, txSignature: sig, alreadySent: true };
+    throw new Error('signAndSendTransaction returned no signature');
+  }
+  else {
+    // List available methods to help debug
+    const methods = Object.keys(w).filter(k => typeof w[k] === 'function').join(', ');
+    throw new Error('No signing method found on wallet. Available: ' + methods);
+  }
+
+  if (!signedTxBytes) throw new Error('Signing cancelled');
+
+  // Handle if wallet returned just a 64-byte signature
+  const arr = signedTxBytes instanceof Uint8Array ? signedTxBytes : new Uint8Array(signedTxBytes);
+  if (arr.length === 64) {
+    // It's just the signature — reassemble full tx
+    const full = XerisTx.concat([XerisTx.encodeCompactU16(1), arr, messageBytes]);
+    return { signedBytes: full, txSignature: XerisTx.base58Encode(arr) };
+  }
+
+  // Full signed tx returned — extract signature from bytes 1..65
+  const sigBytes = XerisTx.extractSignature(arr);
+  return { signedBytes: arr, txSignature: XerisTx.base58Encode(sigBytes) };
+}
+
+// ══════════════════════════════════════════════
 //  BUY FLOW (per-ticket on-chain signing)
 // ══════════════════════════════════════════════
 async function handleBuy() {
@@ -384,23 +442,23 @@ async function handleBuy() {
 
   try {
     setStatus('Building transaction…');
-    const { unsignedTx } = await XerisTx.buildBetTx(state.address, costXRS);
+    const { unsignedTx, messageBytes } = await XerisTx.buildBetTx(state.address, costXRS);
 
     setStatus('Waiting for wallet…');
     btn.textContent = 'APPROVE IN WALLET…';
-    const signedTxBytes = await window.xeris.signTransaction(unsignedTx);
-    if (!signedTxBytes) throw new Error('Signing cancelled');
+    const signResult = await walletSign(unsignedTx, messageBytes);
+    if (!signResult) throw new Error('Signing cancelled');
 
-    const sigBytes = XerisTx.extractSignature(signedTxBytes);
-    const txSig = XerisTx.base58Encode(sigBytes);
+    const { signedBytes, txSignature: txSig, alreadySent } = signResult;
 
-    setStatus('Submitting…');
-    btn.textContent = 'SUBMITTING…';
-    const bytes = signedTxBytes instanceof Uint8Array ? signedTxBytes : new Uint8Array(signedTxBytes);
-    const txBase64 = btoa(String.fromCharCode(...bytes));
-    const r = await fetch('/api/xeris/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tx_base64: txBase64 }) });
-    const data = await r.json();
-    if (data.error) throw new Error(data.error);
+    if (!alreadySent) {
+      setStatus('Submitting…');
+      btn.textContent = 'SUBMITTING…';
+      const txBase64 = btoa(String.fromCharCode(...signedBytes));
+      const r = await fetch('/api/xeris/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tx_base64: txBase64 }) });
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+    }
 
     setStatus('Registering tickets…');
     btn.textContent = 'REGISTERING…';

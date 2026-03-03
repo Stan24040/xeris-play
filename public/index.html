@@ -351,19 +351,41 @@ async function refreshBalance() {
   try { const r = await fetch('/api/xeris/balance/'+S.address); const d = await r.json(); S.balance = (d.balance||0)/1e9; document.getElementById('balanceDisplay').textContent = S.balance.toFixed(4)+' XRS'; } catch{}
 }
 
+async function walletSign(unsignedTx, messageBytes) {
+  const w = window.xeris;
+  if (!w) throw new Error('Xeris Wallet not available');
+  let signedTxBytes = null;
+  if (typeof w.signTransaction === 'function') { signedTxBytes = await w.signTransaction(unsignedTx); }
+  else if (typeof w.sign === 'function') { signedTxBytes = await w.sign(unsignedTx); }
+  else if (typeof w.signMessage === 'function') {
+    const sig = await w.signMessage(messageBytes);
+    if (sig) { const s = sig instanceof Uint8Array ? sig : new Uint8Array(sig); if (s.length===64) { signedTxBytes = XerisTx.concat([XerisTx.encodeCompactU16(1), s, messageBytes]); } else { signedTxBytes = sig; } }
+  }
+  else if (typeof w.signAndSendTransaction === 'function') {
+    const result = await w.signAndSendTransaction(unsignedTx);
+    const sig = typeof result === 'string' ? result : (result?.signature || result?.txid || null);
+    if (sig) return { signedBytes: null, txSignature: sig, alreadySent: true };
+    throw new Error('signAndSendTransaction returned no signature');
+  }
+  else { const methods = Object.keys(w).filter(k => typeof w[k] === 'function').join(', '); throw new Error('No signing method on wallet. Available: ' + methods); }
+  if (!signedTxBytes) throw new Error('Signing cancelled');
+  const arr = signedTxBytes instanceof Uint8Array ? signedTxBytes : new Uint8Array(signedTxBytes);
+  if (arr.length === 64) { const full = XerisTx.concat([XerisTx.encodeCompactU16(1), arr, messageBytes]); return { signedBytes: full, txSignature: XerisTx.base58Encode(arr) }; }
+  const sigBytes = XerisTx.extractSignature(arr);
+  return { signedBytes: arr, txSignature: XerisTx.base58Encode(sigBytes) };
+}
+
 async function buildAndSignBetTx(amountXRS) {
   if (!window.xeris) throw new Error('Xeris Wallet not available');
-  const { unsignedTx } = await XerisTx.buildBetTx(S.address, amountXRS);
-  const signedTxBytes = await window.xeris.signTransaction(unsignedTx);
-  if (!signedTxBytes) throw new Error('Signing cancelled');
-  const sigBytes = XerisTx.extractSignature(signedTxBytes);
-  const sigBase58 = XerisTx.base58Encode(sigBytes);
-  const bytes = signedTxBytes instanceof Uint8Array ? signedTxBytes : new Uint8Array(signedTxBytes);
-  const txBase64 = btoa(String.fromCharCode(...bytes));
+  const { unsignedTx, messageBytes } = await XerisTx.buildBetTx(S.address, amountXRS);
+  const result = await walletSign(unsignedTx, messageBytes);
+  if (!result) throw new Error('Signing cancelled');
+  if (result.alreadySent) return { txSignature: result.txSignature };
+  const txBase64 = btoa(String.fromCharCode(...result.signedBytes));
   const sr = await fetch('/api/xeris/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tx_base64:txBase64}) });
   const sd = await sr.json();
   if (sd.error) throw new Error(sd.error);
-  return { txSignature: sigBase58 };
+  return { txSignature: result.txSignature };
 }
 
 function selectGame(game) {
