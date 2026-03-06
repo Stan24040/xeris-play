@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XerisScreener — Meme Coin & Launchpad Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0:#07080a;--bg1:#0c0f13;--bg2:#111519;--bg3:#161c22;--bg4:#1c232c;
+  --border:#1f2a35;--border2:#263342;
+  --text:#dce8f5;--muted:#4a6480;--dim:#2a3d52;
+  --green:#00ff88;--red:#ff2d55;--yellow:#f5c400;--blue:#00b4ff;--purple:#c471ed;--orange:#ff6b1a;
+  --xeris:#f0c000;--xeris2:#ff8c00;
+  --font-head:'Bebas Neue',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-body:'Outfit',sans-serif;
+  --glow-g:0 0 20px rgba(0,255,136,.15);
+  --glow-r:0 0 20px rgba(255,45,85,.15);
+  --glow-x:0 0 20px rgba(240,192,0,.2);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:13px;-webkit-font-smoothing:antialiased}
+body{background:var(--bg0);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden;cursor:default}
+
+/* grain overlay */
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
+
+/* ── NAVBAR ── */
+nav{display:flex;align-items:center;gap:0;background:var(--bg1);border-bottom:1px solid var(--border);height:52px;padding:0 16px;position:sticky;top:0;z-index:300}
+
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:20px}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--xeris),var(--xeris2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:20px;color:#000;letter-spacing:-1px;flex-shrink:0}
+.logo-text{font-family:var(--font-head);font-size:22px;letter-spacing:1px;line-height:1}
+.logo-text span{color:var(--xeris)}
+.logo-sub{font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:-1px}
+
+.nav-chains{display:flex;gap:2px}
+.nchain{padding:5px 11px;border-radius:5px;font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.5px;cursor:pointer;border:1px solid transparent;color:var(--muted);transition:all .12s}
+.nchain:hover{color:var(--text);background:var(--bg3)}
+.nchain.on{color:#fff;background:var(--bg4);border-color:var(--border2)}
+.nchain.xeris-chain{color:var(--xeris)}
+.nchain.xeris-chain.on{background:rgba(240,192,0,.12);border-color:rgba(240,192,0,.3);color:var(--xeris);box-shadow:var(--glow-x)}
+
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.live-pill{display:flex;align-items:center;gap:6px;background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:20px;padding:4px 10px}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,136,.5)}50%{opacity:.5;box-shadow:0 0 0 4px rgba(0,255,136,0)}}
+.live-txt{font-family:var(--font-mono);font-size:9px;color:var(--green);letter-spacing:1.5px}
+
+.wallet-btn{padding:7px 16px;background:var(--xeris);color:#000;border:none;border-radius:6px;font-family:var(--font-mono);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:opacity .12s}
+.wallet-btn:hover{opacity:.85}
+
+/* ── TICKER ── */
+.ticker-wrap{background:var(--bg1);border-bottom:1px solid var(--border);overflow:hidden;height:32px;display:flex;align-items:center}
+.ticker-inner{display:flex;animation:tickerScroll 40s linear infinite;white-space:nowrap;gap:0}
+.ticker-inner:hover{animation-play-state:paused}
+@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick{display:flex;align-items:center;gap:6px;padding:0 20px;border-right:1px solid var(--border);font-family:var(--font-mono);font-size:10px}
+.tick-sym{color:var(--text);font-weight:600}
+.tick-price{color:var(--muted)}
+.tick-chg{font-size:10px}
+.up{color:var(--green)}.dn{color:var(--red)}
+
+/* ── STATS BAR ── */
+.statsbar{display:flex;background:var(--bg1);border-bottom:1px solid var(--border)}
+.sbar-item{display:flex;flex-direction:column;gap:2px;padding:8px 16px;border-right:1px solid var(--border);min-width:120px}
+.sbar-label{font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.sbar-val{font-family:var(--font-mono);font-size:13px;font-weight:600}
+.sbar-item:last-child{border-right:none;margin-left:auto}
+
+/* ── LAYOUT ── */
+.layout{display:flex;height:calc(100vh - 148px)}
+
+/* ── SIDEBAR ── */
+.sidebar{width:196px;min-width:196px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sb-section{padding:12px 10px 8px}
+.sb-head{font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;padding:0 2px 8px;display:flex;align-items:center;gap:6px}
+.sb-head::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.sb-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:7px 8px;border-radius:6px;background:none;border:none;color:var(--muted);font-size:12px;font-family:var(--font-body);cursor:pointer;text-align:left;transition:all .1s;gap:6px;margin-bottom:2px}
+.sb-btn:hover{background:var(--bg3);color:var(--text)}
+.sb-btn.on{background:rgba(0,180,255,.1);color:var(--blue);font-weight:500}
+.sb-btn .cnt{font-family:var(--font-mono);font-size:9px;background:var(--bg3);padding:1px 5px;border-radius:3px;color:var(--muted);margin-left:auto}
+.sb-btn.on .cnt{background:rgba(0,180,255,.15);color:var(--blue)}
+
+.sb-btn.xbtn.on{background:rgba(240,192,0,.1);color:var(--xeris)}
+.sb-btn.xbtn.on .cnt{background:rgba(240,192,0,.15);color:var(--xeris)}
+.sb-btn.xbtn:hover{color:var(--xeris)}
+
+/* ── CONTENT ── */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg1);border-bottom:1px solid var(--border);flex-shrink:0}
+.search{position:relative;flex:1;max-width:260px}
+.search input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 10px 7px 32px;color:var(--text);font-family:var(--font-body);font-size:12px;outline:none}
+.search input::placeholder{color:var(--muted)}
+.search input:focus{border-color:var(--border2)}
+.search-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+
+.tab-row{display:flex;gap:3px}
+.tab{padding:6px 12px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.5px;cursor:pointer;transition:all .12s;white-space:nowrap}
+.tab:hover{color:var(--text);border-color:var(--border2)}
+.tab.on{background:rgba(0,180,255,.12);color:var(--blue);border-color:rgba(0,180,255,.3)}
+
+.view-btns{display:flex;gap:2px;margin-left:auto}
+.vbtn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:5px;background:var(--bg3);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:13px;transition:all .1s}
+.vbtn.on{color:var(--text);border-color:var(--border2)}
+
+/* ── TABLE ── */
+.table-scroll{flex:1;overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+thead{position:sticky;top:0;z-index:10}
+thead th{background:var(--bg2);padding:8px 10px;font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+thead th:first-child{text-align:left;padding-left:14px;width:30px}
+thead th:nth-child(2){text-align:left}
+thead th:hover{color:var(--text)}
+thead th.sorted{color:var(--blue)}
+
+tbody tr{border-bottom:1px solid rgba(31,42,53,.5);cursor:pointer;transition:background .08s}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+tbody tr.xrow{background:rgba(240,192,0,.025)}
+tbody tr.xrow:hover{background:rgba(240,192,0,.055)}
+tbody tr.flash-g{animation:fg .5s}
+tbody tr.flash-r{animation:fr .5s}
+@keyframes fg{0%{background:rgba(0,255,136,.08)}}
+@keyframes fr{0%{background:rgba(255,45,85,.08)}}
+
+td{padding:9px 10px;text-align:right;vertical-align:middle;font-size:12px;white-space:nowrap}
+td:first-child{text-align:left;padding-left:14px}
+td:nth-child(2){text-align:left}
+
+/* token cell */
+.tcell{display:flex;align-items:center;gap:9px}
+.ticon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:11px;color:#000;flex-shrink:0;position:relative}
+.ticon .hot{position:absolute;top:-4px;right:-4px;background:var(--orange);width:12px;height:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;border:2px solid var(--bg1)}
+.tnames{display:flex;flex-direction:column;gap:1px;min-width:0}
+.tsym{font-weight:700;font-size:12px;font-family:var(--font-mono);display:flex;align-items:center;gap:4px}
+.tname{color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+
+.cbadge{font-family:var(--font-mono);font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;letter-spacing:.5px}
+.cb-xeris{background:rgba(240,192,0,.15);color:var(--xeris)}
+.cb-sol{background:rgba(153,69,255,.15);color:#9945ff}
+.cb-eth{background:rgba(98,126,234,.15);color:#627eea}
+.cb-bsc{background:rgba(243,186,47,.15);color:#f3ba2f}
+.cb-base{background:rgba(0,82,255,.15);color:#0052ff}
+
+.dxtag{font-family:var(--font-mono);font-size:9px;color:var(--muted);background:var(--bg3);padding:1px 4px;border-radius:3px}
+
+.pval{font-family:var(--font-mono);font-size:12px}
+.chg{font-family:var(--font-mono);font-size:11px}
+.rank-n{font-family:var(--font-mono);font-size:10px;color:var(--dim)}
+
+/* sparkline */
+.spark{width:68px;height:22px}
+
+/* launchpad progress */
+.lbar-wrap{display:inline-flex;flex-direction:column;gap:2px;align-items:flex-end}
+.lbar{width:64px;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.lbar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--xeris),var(--xeris2))}
+.lpct{font-family:var(--font-mono);font-size:8px;color:var(--xeris)}
+
+/* ── CARDS ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;padding:12px;overflow-y:auto;flex:1}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px;cursor:pointer;transition:all .14s;position:relative;overflow:hidden}
+.card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.card.xcard{border-color:rgba(240,192,0,.18)}
+.card.xcard::after{content:'⬡ XERIS';position:absolute;top:10px;right:10px;font-family:var(--font-mono);font-size:8px;color:var(--xeris);background:rgba(240,192,0,.1);padding:2px 6px;border-radius:3px}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.card-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:12px;color:#000;flex-shrink:0}
+.card-sym{font-family:var(--font-mono);font-weight:700;font-size:13px}
+.card-nm{color:var(--muted);font-size:10px}
+.card-price{font-family:var(--font-mono);font-size:19px;font-weight:700;margin-bottom:3px}
+.card-row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px}
+.card-row .lbl{color:var(--muted)}
+.card-spk{margin-top:8px}
+.card-spk svg{width:100%;height:26px}
+.card-prog{margin-top:8px}
+.cp-label{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-bottom:3px}
+.cp-bar{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.cp-fill{height:100%;background:linear-gradient(90deg,var(--xeris),var(--xeris2));border-radius:2px;transition:width .4s}
+
+/* ── RIGHT PANEL (whale feed) ── */
+.rpanel{width:260px;min-width:260px;background:var(--bg1);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.rp-head{padding:10px 12px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:10px;color:var(--text);display:flex;align-items:center;gap:6px}
+.rp-head span{color:var(--muted);font-size:9px;margin-left:auto}
+
+.whale-feed{flex:1;overflow-y:auto;padding:8px}
+.whale-item{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;margin-bottom:6px;transition:border-color .12s}
+.whale-item:hover{border-color:var(--border2)}
+.whale-item.buy{border-left:2px solid var(--green)}
+.whale-item.sell{border-left:2px solid var(--red)}
+.whale-item.launch{border-left:2px solid var(--xeris)}
+.wi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.wi-sym{font-family:var(--font-mono);font-weight:700;font-size:11px}
+.wi-type{font-family:var(--font-mono);font-size:9px;letter-spacing:.5px}
+.wi-type.BUY{color:var(--green)}.wi-type.SELL{color:var(--red)}.wi-type.LAUNCH{color:var(--xeris)}
+.wi-amt{font-family:var(--font-mono);font-size:12px;font-weight:600;margin-bottom:2px}
+.wi-meta{font-size:9px;color:var(--muted);display:flex;justify-content:space-between}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;width:92%;max-width:500px;max-height:92vh;overflow-y:auto;animation:mIn .18s ease}
+@keyframes mIn{from{opacity:0;transform:scale(.95) translateY(12px)}}
+
+.mhdr{display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid var(--border)}
+.m-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:15px;color:#000;flex-shrink:0}
+.m-sym{font-family:var(--font-head);font-size:24px;letter-spacing:1px}
+.m-nm{color:var(--muted);font-size:11px}
+.m-close{margin-left:auto;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px;line-height:1}
+.m-close:hover{color:var(--text)}
+
+.mbody{padding:18px 20px}
+.m-price{font-family:var(--font-head);font-size:36px;letter-spacing:1px;margin-bottom:2px}
+.m-chgs{display:flex;gap:10px;margin-bottom:16px;font-family:var(--font-mono);font-size:11px}
+.m-chain-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(240,192,0,.1);color:var(--xeris);border:1px solid rgba(240,192,0,.25);border-radius:5px;padding:4px 10px;font-family:var(--font-mono);font-size:10px;font-weight:600;margin-bottom:12px}
+.m-prog{margin-bottom:14px}
+.mp-lbl{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:5px}
+.mp-bar{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.mp-fill{height:100%;background:linear-gradient(90deg,var(--xeris),var(--xeris2));border-radius:4px;transition:width .4s}
+.m-chart{height:110px;background:var(--bg3);border-radius:8px;margin-bottom:14px;overflow:hidden}
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.m-stat{background:var(--bg3);border-radius:7px;padding:10px}
+.ms-lbl{font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:3px}
+.ms-val{font-family:var(--font-mono);font-size:14px;font-weight:600}
+.m-acts{display:flex;gap:8px}
+.m-btn{flex:1;padding:11px;border-radius:8px;font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:all .14s;border:1px solid var(--border2);background:var(--bg3);color:var(--text)}
+.m-btn:hover{border-color:var(--border2);background:var(--bg4)}
+.m-btn.primary{background:var(--xeris);color:#000;border-color:transparent}
+.m-btn.primary:hover{opacity:.85}
+
+/* ── EMPTY ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--muted)}
+.espin{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.emsg{font-family:var(--font-mono);font-size:11px;letter-spacing:.5px}
+
+/* ── NEW PAIR BADGE ── */
+.new-badge{background:rgba(0,255,136,.1);color:var(--green);font-family:var(--font-mono);font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:.5px;border:1px solid rgba(0,255,136,.2)}
+.hot-badge{background:rgba(255,107,26,.1);color:var(--orange);font-family:var(--font-mono);font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:.5px;border:1px solid rgba(255,107,26,.2)}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--dim)}
+
+@media(max-width:1100px){.rpanel{display:none}}
+@media(max-width:800px){.sidebar{display:none};td:nth-child(n+8){display:none};th:nth-child(n+8){display:none}}
+
+/* ── RIGHT WHALE PANEL ───────────────────────────── */
+.rpanel{width:245px;min-width:245px;background:var(--bg1);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.rp-hd{padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;font-weight:600;flex-shrink:0}
+.rp-hd span{color:var(--muted);font-size:9px;margin-left:auto}
+.whale-list{flex:1;overflow-y:auto;padding:7px}
+.wi{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;margin-bottom:5px}
+.wi.buy{border-left:2px solid var(--green)}.wi.sell{border-left:2px solid var(--red)}.wi.launch{border-left:2px solid var(--xeris)}
+.wi-top{display:flex;justify-content:space-between;margin-bottom:3px}
+.wi-sym{font-family:var(--font-mono);font-weight:700;font-size:11px}
+.wi-type{font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:.5px}
+.wi-type.BUY{color:var(--green)}.wi-type.SELL{color:var(--red)}.wi-type.LAUNCH{color:var(--xeris)}
+.wi-amt{font-family:var(--font-mono);font-size:13px;font-weight:600;margin-bottom:2px}
+.wi-meta{font-size:9px;color:var(--muted);display:flex;justify-content:space-between}
+.wi-note{font-size:9px;color:var(--muted);margin-top:2px;font-style:italic}
+@media(max-width:1100px){.rpanel{display:none}}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <a class="logo" href="#">
+    <div class="logo-mark">X</div>
+    <div>
+      <div class="logo-text">XERIS<span>SCREENER</span></div>
+      <div class="logo-sub">Meme Coin &amp; Launchpad Tracker</div>
+    </div>
+  </a>
+
+  <div class="nav-chains">
+    <div class="nchain xeris-chain on" data-chain="all" onclick="setChain('all',this)">ALL</div>
+    <div class="nchain xeris-chain" data-chain="xeris" onclick="setChain('xeris',this)">⬡ XERIS</div>
+    <div class="nchain" data-chain="solana" onclick="setChain('solana',this)">◎ SOL</div>
+    <div class="nchain" data-chain="eth" onclick="setChain('eth',this)">Ξ ETH</div>
+    <div class="nchain" data-chain="bsc" onclick="setChain('bsc',this)">⬡ BSC</div>
+    <div class="nchain" data-chain="base" onclick="setChain('base',this)">⬟ BASE</div>
+  </div>
+
+  <div class="nav-right">
+    <div class="live-pill"><div class="live-dot"></div><div class="live-txt" id="liveTxt">LIVE</div></div>
+    <button class="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
+  </div>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="ticker"></div>
+</div>
+
+<!-- STATS BAR -->
+<div class="statsbar">
+  <div class="sbar-item"><div class="sbar-label">XRS Price</div><div class="sbar-val" id="sb-xrs" style="color:var(--xeris)">$—</div></div>
+  <div class="sbar-item"><div class="sbar-label">Total Pairs</div><div class="sbar-val" id="sb-pairs">—</div></div>
+  <div class="sbar-item"><div class="sbar-label">Vol 24H</div><div class="sbar-val" id="sb-vol">—</div></div>
+  <div class="sbar-item"><div class="sbar-label">Liquidity</div><div class="sbar-val" id="sb-liq">—</div></div>
+  <div class="sbar-item"><div class="sbar-label">Xeris Launch</div><div class="sbar-val" id="sb-launch" style="color:var(--xeris)">—</div></div>
+  <div class="sbar-item"><div class="sbar-label">New Today</div><div class="sbar-val up" id="sb-new">—</div></div>
+  <div class="sbar-item" style="border-right:none"><div class="sbar-label">Updated</div><div class="sbar-val" id="sb-time" style="color:var(--muted)">—</div></div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-section">
+      <div class="sb-head">Screener</div>
+      <button class="sb-btn on" onclick="setFilter('all',this)">🔥 All Tokens <span class="cnt" id="c-all">0</span></button>
+      <button class="sb-btn" onclick="setFilter('trending',this)">📈 Trending <span class="cnt" id="c-trend">0</span></button>
+      <button class="sb-btn" onclick="setFilter('new',this)">🆕 New Pairs <span class="cnt" id="c-new">0</span></button>
+      <button class="sb-btn" onclick="setFilter('gainers',this)">🚀 Top Gainers <span class="cnt" id="c-gain">0</span></button>
+      <button class="sb-btn" onclick="setFilter('losers',this)">💀 Losers <span class="cnt" id="c-lose">0</span></button>
+      <button class="sb-btn" onclick="setFilter('highvol',this)">⚡ High Volume <span class="cnt" id="c-hvol">0</span></button>
+      <button class="sb-btn" onclick="setFilter('pump',this)">🎯 Pump.fun <span class="cnt" id="c-pump">0</span></button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-head">⬡ Xeris Chain</div>
+      <button class="sb-btn xbtn" onclick="setFilter('x-all',this)">All Xeris <span class="cnt" id="c-xeris">0</span></button>
+      <button class="sb-btn xbtn" onclick="setFilter('x-launch',this)">🚀 Launchpad <span class="cnt" id="c-xlaunch">0</span></button>
+      <button class="sb-btn xbtn" onclick="setFilter('x-swap',this)">💱 Swap Pools <span class="cnt" id="c-xswap">0</span></button>
+      <button class="sb-btn xbtn" onclick="setFilter('x-rwa',this)">🏦 RWA Tokens <span class="cnt" id="c-xrwa">0</span></button>
+      <button class="sb-btn xbtn" onclick="setFilter('x-staked',this)">⛏ Staked <span class="cnt" id="c-xstake">0</span></button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-head">Sort</div>
+      <button class="sb-btn" onclick="setSort('volume24h')">Volume 24H</button>
+      <button class="sb-btn" onclick="setSort('change24h')">% Change 24H</button>
+      <button class="sb-btn" onclick="setSort('change1h')">% Change 1H</button>
+      <button class="sb-btn" onclick="setSort('liquidity')">Liquidity</button>
+      <button class="sb-btn" onclick="setSort('marketCap')">Market Cap</button>
+      <button class="sb-btn" onclick="setSort('txns24h')">Most Active</button>
+      <button class="sb-btn" onclick="setSort('launchedAt')">Newest</button>
+    </div>
+
+    <div class="sb-section" style="margin-top:auto;padding-top:12px">
+      <div style="background:rgba(240,192,0,.07);border:1px solid rgba(240,192,0,.15);border-radius:8px;padding:10px">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--xeris);letter-spacing:1px;margin-bottom:6px">⬡ XERIS TESTNET</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">138.197.116.81</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--dim)">RPC :56001 · EXP :50008</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--dim);margin-top:2px">Block: 4s · TPS: ~2,500</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="search">
+        <span class="search-ico">⌕</span>
+        <input id="searchInput" type="text" placeholder="Search tokens, symbols, address..." oninput="onSearch(this.value)">
+      </div>
+      <div class="tab-row">
+        <div class="tab on" onclick="setTab('all',this)">All</div>
+        <div class="tab" onclick="setTab('trending',this)">📈 Trending</div>
+        <div class="tab" onclick="setTab('gainers',this)">🚀 Gainers</div>
+        <div class="tab" onclick="setTab('losers',this)">📉 Losers</div>
+        <div class="tab" onclick="setTab('new',this)">🆕 New</div>
+        <div class="tab" style="color:var(--xeris);border-color:rgba(240,192,0,.2)" onclick="setTab('x-launch',this)">⬡ Launchpad</div>
+      </div>
+      <div class="view-btns">
+        <div class="vbtn on" id="vT" onclick="setView('table')">☰</div>
+        <div class="vbtn" id="vC" onclick="setView('cards')">⊞</div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-scroll" id="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Token</th>
+            <th onclick="setSort('price')">Price ↕</th>
+            <th onclick="setSort('change1h')">1H %</th>
+            <th onclick="setSort('change6h')">6H %</th>
+            <th onclick="setSort('change24h')">24H %</th>
+            <th onclick="setSort('volume24h')">Volume</th>
+            <th onclick="setSort('liquidity')">Liq</th>
+            <th onclick="setSort('marketCap')">MCap</th>
+            <th onclick="setSort('txns24h')">Txns</th>
+            <th>Chart</th>
+            <th onclick="setSort('launchedAt')">Age</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="12"><div class="empty-state"><div class="espin"></div><div class="emsg">Loading tokens...</div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CARDS (hidden) -->
+    <div class="cards" id="cardsWrap" style="display:none"></div>
+  </div>
+
+  <!-- RIGHT PANEL: WHALE FEED -->
+  <div class="rpanel">
+    <div class="rp-head">🐋 Whale Activity <span id="whaleCount">0 alerts</span></div>
+    <div class="whale-feed" id="whaleFeed">
+      <div class="empty-state" style="height:200px"><div class="emsg">Waiting for activity...</div></div>
+    </div>
+  </div>
+
+  <!-- WHALE FEED -->
+  <div class="rpanel">
+    <div class="rp-hd">🐋 Live Activity <span id="wc">0 events</span></div>
+    <div class="whale-list" id="wfeed">
+      <div class="empty" style="height:160px"><div class="emsg">Monitoring…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="mhdr">
+      <div class="m-ico" id="mIco"></div>
+      <div><div class="m-sym" id="mSym"></div><div class="m-nm" id="mNm"></div></div>
+      <button class="m-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="mbody">
+      <div id="mXBadge"></div>
+      <div class="m-price" id="mPrice"></div>
+      <div class="m-chgs" id="mChgs"></div>
+      <div id="mProg"></div>
+      <div class="m-chart" id="mChart"></div>
+      <div class="m-grid" id="mStats"></div>
+      <div class="m-acts" id="mActs"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────────────────────
+const XERIS_HOST = 'http://138.197.116.81';
+const RPC  = 56001;
+const EXP  = 50008;
+const BACK = (location.protocol==='file:') ? null : location.origin;
+
+// ─────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────
+let ALL=[], VIS=[], sortKey='volume24h', sortDir=-1, chainF='all', filterF='all', searchQ='', viewMode='table';
+let whaleEvents=[];
+
+// ─────────────────────────────────────────────────────────────
+// FORMATTERS
+// ─────────────────────────────────────────────────────────────
+const nv=v=>isFinite(+v)?+v:0;
+const $ =id=>document.getElementById(id);
+
+function fU(v){v=nv(v);if(v>=1e9)return'$'+(v/1e9).toFixed(2)+'B';if(v>=1e6)return'$'+(v/1e6).toFixed(2)+'M';if(v>=1e3)return'$'+(v/1e3).toFixed(1)+'K';return'$'+v.toFixed(2)}
+function fP(v){v=nv(v);if(!v)return'$0.00';if(v>=1000)return'$'+v.toLocaleString('en',{maximumFractionDigits:2});if(v>=1)return'$'+v.toFixed(4);if(v>=0.001)return'$'+v.toFixed(6);if(v>=1e-6)return'$'+v.toFixed(8);return'$'+v.toExponential(2)}
+function fChg(v){v=nv(v);const c=v>=0?'up':'dn';return`<span class="chg ${c}">${v>=0?'+':''}${v.toFixed(2)}%</span>`}
+function fAge(ts){const ms=Date.now()-(ts||Date.now()),s=ms/1e3,m=s/60,h=m/60,d=h/24;return d>=1?Math.floor(d)+'d':h>=1?Math.floor(h)+'h':m>=1?Math.floor(m)+'m':'<1m'}
+function color(sym){const C=['#00ff88','#00e5ff','#ff6b1a','#c471ed','#f5c400','#ff2d55','#39ff14','#ff9500','#00b4ff','#e040fb','#69ff47','#ff80ab','#80d8ff','#ccff90','#ea80fc','#ff7043','#00ffcc','#ff6584'];if(!sym)return C[0];let h=0;for(let i=0;i<sym.length;i++)h=sym.charCodeAt(i)+((h<<5)-h);return C[Math.abs(h)%C.length]}
+
+function spark(data,up){
+  const c=up?'#00ff88':'#ff2d55';
+  if(!Array.isArray(data)||data.length<2)return`<svg class="spark" viewBox="0 0 68 22"><line x1="0" y1="11" x2="68" y2="11" stroke="${c}" stroke-width="1" opacity=".25"/></svg>`;
+  const v=data.map(x=>nv(x)),mn=Math.min(...v),mx=Math.max(...v),r=mx-mn||1;
+  const pts=v.map((x,i)=>`${(i/(v.length-1))*68},${22-((x-mn)/r)*18-2}`).join(' ');
+  return`<svg class="spark" viewBox="0 0 68 22" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// FILTER / SORT
+// ─────────────────────────────────────────────────────────────
+function setChain(c,el){
+  chainF=c;
+  document.querySelectorAll('.nchain').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  applyFilter();
+}
+function setFilter(f,el){
+  filterF=f;
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('on'));
+  if(el)el.classList.add('on');
+  applyFilter();
+}
+function setTab(f,el){
+  filterF=f;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  if(el)el.classList.add('on');
+  applyFilter();
+}
+function setSort(k){
+  if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=-1;}
+  applyFilter();
+}
+function onSearch(q){searchQ=q.toLowerCase();applyFilter();}
+function setView(v){
+  viewMode=v;
+  $('tableWrap').style.display=v==='table'?'block':'none';
+  $('cardsWrap').style.display=v==='cards'?'grid':'none';
+  $('vT').classList.toggle('on',v==='table');
+  $('vC').classList.toggle('on',v==='cards');
+  render();
+}
+
+function applyFilter(){
+  let d=[...ALL];
+  if(chainF!=='all')d=d.filter(p=>(p.chain||'solana')===chainF);
+  switch(filterF){
+    case'trending': d=d.filter(p=>nv(p.txns24h)>50).sort((a,b)=>nv(b.txns24h)-nv(a.txns24h));break;
+    case'new':      d=d.filter(p=>Date.now()-(p.launchedAt||0)<86400000);break;
+    case'gainers':  d=d.filter(p=>nv(p.change24h)>0).sort((a,b)=>nv(b.change24h)-nv(a.change24h));break;
+    case'losers':   d=d.filter(p=>nv(p.change24h)<0).sort((a,b)=>nv(a.change24h)-nv(b.change24h));break;
+    case'highvol':  d=d.sort((a,b)=>nv(b.volume24h)-nv(a.volume24h));break;
+    case'pump':     d=d.filter(p=>p.dex==='PumpSwap'||p.dex==='Pump.fun');break;
+    case'x-all':    d=d.filter(p=>p.chain==='xeris');break;
+    case'x-launch': d=d.filter(p=>p.source==='xeris-launchpad');break;
+    case'x-swap':   d=d.filter(p=>p.source==='xeris-swap');break;
+    case'x-rwa':    d=d.filter(p=>p.source==='xeris-registry');break;
+  }
+  if(searchQ)d=d.filter(p=>(p.symbol||'').toLowerCase().includes(searchQ)||(p.name||'').toLowerCase().includes(searchQ)||(p.tokenAddress||'').includes(searchQ));
+  d.sort((a,b)=>{
+    let av=nv(a[sortKey]),bv=nv(b[sortKey]);
+    if(sortKey==='launchedAt'){av=a.launchedAt||0;bv=b.launchedAt||0;}
+    return(bv-av)*sortDir;
+  });
+  d.forEach((p,i)=>p.rank=i+1);
+  VIS=d;
+  render();
+  updateSideCounts();
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER TABLE
+// ─────────────────────────────────────────────────────────────
+function render(){if(viewMode==='table')renderTable();else renderCards();}
+
+function chainBadge(c){
+  const M={xeris:'cb-xeris ⬡ XERIS',solana:'cb-sol ◎ SOL',eth:'cb-eth Ξ ETH',bsc:'cb-bsc ⬡ BSC',base:'cb-base ⬟ BASE'};
+  const v=M[c||'solana']||M.solana;
+  const[cls,...rest]=v.split(' ');
+  return`<span class="cbadge ${cls}">${rest.join(' ')}</span>`;
+}
+
+function renderTable(){
+  const tb=$('tbody');
+  if(!VIS.length){tb.innerHTML='<tr><td colspan="12"><div class="empty-state"><div class="emsg">No tokens found</div></div></td></tr>';return;}
+  tb.innerHTML=VIS.map(p=>{
+    const col=color(p.symbol);
+    const sym=(p.symbol||'???').slice(0,6);
+    const ch=p.chain||'solana';
+    const isX=ch==='xeris';
+    const isL=p.source==='xeris-launchpad';
+    const isNew=Date.now()-(p.launchedAt||0)<3600000;
+    const isHot=nv(p.change1h)>20;
+    const spk=spark(p.sparkline,nv(p.change24h)>=0);
+    const mcapCell=isL
+      ?`<div class="lbar-wrap"><div class="lbar"><div class="lbar-fill" style="width:${Math.min(100,nv(p.launchProgress))}%"></div></div><div class="lpct">${nv(p.launchProgress).toFixed(0)}%</div></div>`
+      :fU(p.marketCap);
+    return`<tr class="${isX?'xrow':''}" onclick="openModal('${p.id}')">
+      <td><span class="rank-n">${p.rank}</span></td>
+      <td><div class="tcell">
+        <div class="ticon" style="background:${col}">${sym.slice(0,2)}${isHot?'<div class="hot">🔥</div>':''}</div>
+        <div class="tnames">
+          <div class="tsym">${sym} ${chainBadge(ch)} ${isNew?'<span class="new-badge">NEW</span>':''}</div>
+          <div class="tname">${(p.name||'').slice(0,16)} · <span class="dxtag">${p.dex||'DEX'}</span></div>
+        </div>
+      </div></td>
+      <td class="pval">${fP(p.price)}</td>
+      <td>${fChg(p.change1h)}</td>
+      <td>${fChg(p.change6h)}</td>
+      <td>${fChg(p.change24h)}</td>
+      <td style="color:var(--text)">${fU(p.volume24h)}</td>
+      <td style="color:var(--muted)">${fU(p.liquidity)}</td>
+      <td>${mcapCell}</td>
+      <td style="color:var(--muted);font-family:var(--font-mono)">${nv(p.txns24h).toLocaleString()}</td>
+      <td>${spk}</td>
+      <td style="color:var(--muted);font-family:var(--font-mono);font-size:10px">${fAge(p.launchedAt)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCards(){
+  const w=$('cardsWrap');
+  if(!VIS.length){w.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="emsg">No tokens</div></div>';return;}
+  w.innerHTML=VIS.map(p=>{
+    const col=color(p.symbol);
+    const isX=p.chain==='xeris';
+    const isL=p.source==='xeris-launchpad';
+    const sym=(p.symbol||'???').slice(0,6);
+    const spk=spark(p.sparkline,nv(p.change24h)>=0);
+    const pc=nv(p.change24h);
+    return`<div class="card ${isX?'xcard':''}" onclick="openModal('${p.id}')">
+      <div class="card-top">
+        <div class="card-ico" style="background:${col}">${sym.slice(0,2)}</div>
+        <div><div class="card-sym">${sym}</div><div class="card-nm">${(p.name||'').slice(0,14)}</div></div>
+      </div>
+      <div class="card-price" style="color:${col}">${fP(p.price)}</div>
+      <div class="card-row"><span class="lbl">24H</span><span class="${pc>=0?'up':'dn'}">${pc>=0?'+':''}${pc.toFixed(2)}%</span></div>
+      <div class="card-row"><span class="lbl">VOL</span><span>${fU(p.volume24h)}</span></div>
+      <div class="card-row"><span class="lbl">LIQ</span><span>${fU(p.liquidity)}</span></div>
+      ${isL?`<div class="card-prog"><div class="cp-label"><span>Bonding Curve</span><span style="color:var(--xeris)">${nv(p.launchProgress).toFixed(0)}%</span></div><div class="cp-bar"><div class="cp-fill" style="width:${Math.min(100,nv(p.launchProgress))}%"></div></div></div>`:''}
+      <div class="card-spk">${spk}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// STATS BAR + SIDEBAR COUNTS
+// ─────────────────────────────────────────────────────────────
+function updateStats(){
+  const xrs=ALL.find(p=>p.symbol==='XRS'||p.symbol==='XERIS');
+  const tv=ALL.reduce((s,p)=>s+nv(p.volume24h),0);
+  const tl=ALL.reduce((s,p)=>s+nv(p.liquidity),0);
+  const nt=ALL.filter(p=>Date.now()-(p.launchedAt||0)<86400000).length;
+  const xl=ALL.filter(p=>p.source==='xeris-launchpad').length;
+  if(xrs)$('sb-xrs').textContent=fP(xrs.price);
+  $('sb-pairs').textContent=ALL.length;
+  $('sb-vol').textContent=fU(tv).replace('$','');
+  $('sb-liq').textContent=fU(tl).replace('$','');
+  $('sb-launch').textContent=xl+' active';
+  $('sb-new').textContent='+'+nt;
+  $('sb-time').textContent=new Date().toLocaleTimeString();
+  $('liveTxt').textContent='LIVE · '+ALL.length;
+  buildTicker();
+}
+
+function updateSideCounts(){
+  const xrs=ALL.filter(p=>p.chain==='xeris');
+  $('c-all').textContent=ALL.length;
+  $('c-trend').textContent=ALL.filter(p=>nv(p.txns24h)>50).length;
+  $('c-new').textContent=ALL.filter(p=>Date.now()-(p.launchedAt||0)<86400000).length;
+  $('c-gain').textContent=ALL.filter(p=>nv(p.change24h)>0).length;
+  $('c-lose').textContent=ALL.filter(p=>nv(p.change24h)<0).length;
+  $('c-hvol').textContent=ALL.filter(p=>nv(p.volume24h)>1000).length;
+  $('c-pump').textContent=ALL.filter(p=>p.dex==='PumpSwap'||p.dex==='Pump.fun').length;
+  $('c-xeris').textContent=xrs.length;
+  $('c-xlaunch').textContent=xrs.filter(p=>p.source==='xeris-launchpad').length;
+  $('c-xswap').textContent=xrs.filter(p=>p.source==='xeris-swap').length;
+  $('c-xrwa').textContent=xrs.filter(p=>p.source==='xeris-registry').length;
+  $('c-xstake').textContent=0;
+}
+
+// ─────────────────────────────────────────────────────────────
+// TICKER
+// ─────────────────────────────────────────────────────────────
+function buildTicker(){
+  const top=[...ALL].sort((a,b)=>nv(b.volume24h)-nv(a.volume24h)).slice(0,20);
+  const make=arr=>arr.map(p=>{const c=nv(p.change24h)>=0?'up':'dn';return`<div class="tick"><span class="tick-sym">${(p.symbol||'???').slice(0,6)}</span><span class="tick-price">${fP(p.price)}</span><span class="tick-chg ${c}">${nv(p.change24h)>=0?'+':''}${nv(p.change24h).toFixed(1)}%</span></div>`;}).join('');
+  $('ticker').innerHTML=make(top)+make(top);
+}
+
+// ─────────────────────────────────────────────────────────────
+// WHALE FEED
+// ─────────────────────────────────────────────────────────────
+function addWhaleEvent(type,sym,amount,chain,extra){
+  const ev={type,sym,amount,chain,extra,ts:Date.now()};
+  whaleEvents.unshift(ev);
+  if(whaleEvents.length>50)whaleEvents.pop();
+  renderWhaleFeed();
+  $('whaleCount').textContent=whaleEvents.length+' alerts';
+}
+function renderWhaleFeed(){
+  const feed=$('whaleFeed');
+  if(!whaleEvents.length){feed.innerHTML='<div class="empty-state" style="height:200px"><div class="emsg">Waiting...</div></div>';return;}
+  feed.innerHTML=whaleEvents.slice(0,30).map(e=>{
+    const col=e.type==='BUY'?'buy':e.type==='SELL'?'sell':'launch';
+    const ago=Math.floor((Date.now()-e.ts)/1000);
+    const agoTxt=ago<60?ago+'s ago':Math.floor(ago/60)+'m ago';
+    return`<div class="whale-item ${col}">
+      <div class="wi-top"><span class="wi-sym">${e.sym}</span><span class="wi-type ${e.type}">${e.type}</span></div>
+      <div class="wi-amt">${fU(e.amount)}</div>
+      <div class="wi-meta"><span>${e.chain||'XERIS'}</span><span>${agoTxt}</span></div>
+      ${e.extra?`<div style="font-size:9px;color:var(--muted);margin-top:2px">${e.extra}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODAL
+// ─────────────────────────────────────────────────────────────
+function openModal(id){
+  const p=ALL.find(x=>x.id===id);if(!p)return;
+  const col=color(p.symbol);
+  const isX=p.chain==='xeris';
+  const isL=p.source==='xeris-launchpad';
+  const c24=nv(p.change24h);
+
+  $('mIco').style.background=col;
+  $('mIco').textContent=(p.symbol||'??').slice(0,2);
+  $('mSym').textContent=p.symbol||'???';
+  $('mNm').textContent=(p.name||'')+(p.dex?' · '+p.dex:'');
+  $('mPrice').textContent=fP(p.price);
+  $('mChgs').innerHTML=`${fChg(p.change1h)} 1H &nbsp; ${fChg(p.change6h)} 6H &nbsp; ${fChg(c24)} 24H`;
+  $('mXBadge').innerHTML=isX?`<div class="m-chain-badge">⬡ XERIS · ${p.dex||'XERIS'}</div>`:'';
+  $('mProg').innerHTML=isL?`<div class="m-prog"><div class="mp-lbl"><span>🚀 Bonding Curve Progress</span><span style="color:var(--xeris)">${nv(p.launchProgress).toFixed(1)}%</span></div><div class="mp-bar"><div class="mp-fill" style="width:${Math.min(100,nv(p.launchProgress))}%"></div></div></div>`:'';
+
+  // Inline chart
+  const spk=p.sparkline&&p.sparkline.length>1?p.sparkline:Array.from({length:24},(_,j)=>p.price*(1+Math.sin(j/3+id.length)*0.08));
+  const mn=Math.min(...spk),mx=Math.max(...spk),r=mx-mn||1;
+  const pts=spk.map((x,i)=>`${(i/(spk.length-1))*480},${100-((x-mn)/r)*88-4}`).join(' ');
+  const cc=c24>=0?'#00ff88':'#ff2d55';
+  $('mChart').innerHTML=`<svg viewBox="0 0 480 110" style="width:100%;height:100%" preserveAspectRatio="none"><defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${cc}" stop-opacity=".25"/><stop offset="100%" stop-color="${cc}" stop-opacity="0"/></linearGradient></defs><polygon points="${pts} 480,110 0,110" fill="url(#mg)"/><polyline points="${pts}" fill="none" stroke="${cc}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  $('mStats').innerHTML=[
+    {l:'Volume 24H',v:fU(p.volume24h)},{l:'Liquidity',v:fU(p.liquidity)},
+    {l:'Market Cap',v:fU(p.marketCap)},{l:'Txns 24H',v:nv(p.txns24h).toLocaleString()},
+    {l:'Buys',v:`<span class="up">${nv(p.buys)}</span>`},{l:'Sells',v:`<span class="dn">${nv(p.sells)}</span>`},
+  ].map(s=>`<div class="m-stat"><div class="ms-lbl">${s.l}</div><div class="ms-val">${s.v}</div></div>`).join('');
+
+  const expUrl=isX?`${XERIS_HOST}:${EXP}/v2/tx/${p.id}`:(p.url||`https://dexscreener.com/solana/${p.id}`);
+  $('mActs').innerHTML=`<button class="m-btn primary" onclick="window.open('${expUrl}','_blank')">View on Explorer</button><button class="m-btn" onclick="window.open('${p.url||expUrl}','_blank')">Trade</button><button class="m-btn" onclick="closeModalDirect()">✕ Close</button>`;
+
+  $('overlay').classList.add('open');
+}
+function closeModal(e){if(e.target.id==='overlay')closeModalDirect();}
+function closeModalDirect(){$('overlay').classList.remove('open');}
+function connectWallet(){alert('Xeris wallet integration coming soon.\n\nThe xeris-sdk npm package will handle:\n• Ed25519 keypair generation\n• Transaction signing\n• On-chain swaps & launchpad buys');}
+
+// ─────────────────────────────────────────────────────────────
+// DATA — XERIS TESTNET
+// ─────────────────────────────────────────────────────────────
+async function fetchXerisLaunchpad(){
+  try{
+    const r=await fetch(`${XERIS_HOST}:${RPC}/launchpads`,{signal:AbortSignal.timeout(8000)});
+    const d=await r.json();
+    return(Array.isArray(d)?d:(d.launchpads||d.data||[])).map(normLaunch);
+  }catch(e){console.warn('[XRS] launchpad:',e.message);return[];}
+}
+async function fetchXerisSwaps(){
+  try{
+    const r=await fetch(`${XERIS_HOST}:${RPC}/contracts`,{signal:AbortSignal.timeout(8000)});
+    const d=await r.json();
+    const all=Array.isArray(d)?d:(d.contracts||d.data||[]);
+    return all.filter(c=>(c.contract_type||c.type)==='swap').map(normSwap);
+  }catch(e){return[];}
+}
+async function fetchXerisTokens(){
+  try{
+    const r=await fetch(`${XERIS_HOST}:${EXP}/v2/tokens`,{signal:AbortSignal.timeout(8000)});
+    const d=await r.json();
+    return(Array.isArray(d)?d:(d.tokens||d.data||[])).map(normToken);
+  }catch(e){return[];}
+}
+async function fetchXerisRecentTxs(){
+  try{
+    const r=await fetch(`${XERIS_HOST}:${EXP}/v2/transactions?page=1&page_size=20`,{signal:AbortSignal.timeout(6000)});
+    const d=await r.json();
+    return Array.isArray(d)?d:(d.transactions||d.data||[]);
+  }catch(e){return[];}
+}
+async function fetchBackend(){
+  if(!BACK)return[];
+  try{const r=await fetch(BACK+'/api/pairs?limit=200');const d=await r.json();return(d.pairs||[]).map(normBackend);}
+  catch(e){return[];}
+}
+
+// ─────────────────────────────────────────────────────────────
+// NORMALIZERS
+// ─────────────────────────────────────────────────────────────
+function normLaunch(p,i){
+  const sym=p.symbol||p.token_symbol||'???';
+  return{id:p.contract_id||p.id||'l'+i,rank:i+1,symbol:sym,name:p.name||p.token_name||sym,
+    chain:'xeris',dex:'XerisLaunch',source:'xeris-launchpad',
+    url:`${XERIS_HOST}:${EXP}`,tokenAddress:p.token_id||'',
+    price:nv(p.current_price),priceUsd:nv(p.current_price),
+    change1h:nv(p.change_1h),change6h:nv(p.change_6h),change24h:nv(p.change_24h),
+    volume24h:nv(p.volume_24h||p.volume),liquidity:nv(p.liquidity),
+    marketCap:nv(p.market_cap),buys:nv(p.buys),sells:nv(p.sells),
+    txns24h:nv(p.buys)+nv(p.sells),launchedAt:p.created_at||Date.now(),
+    launchProgress:nv(p.progress_pct),sparkline:[]};
+}
+function normSwap(c,i){
+  const st=c.state||c;
+  const symA=st.token_a||'TOKEN',symB=st.token_b||'XRS';
+  const sym=symA==='xrs_native'?symB:symA;
+  const rA=nv(st.reserve_a||st.amount_a),rB=nv(st.reserve_b||st.amount_b);
+  return{id:c.contract_id||c.id||'s'+i,rank:0,symbol:sym,name:st.name||`${sym}/XRS Pool`,
+    chain:'xeris',dex:'XerisSwap',source:'xeris-swap',url:`${XERIS_HOST}:${EXP}`,tokenAddress:st.token_a||'',
+    price:rA>0?rB/rA:0,priceUsd:rA>0?rB/rA:0,
+    change1h:0,change6h:0,change24h:nv(st.change_24h),
+    volume24h:nv(st.volume_24h),liquidity:(rB/1e9)*2,
+    marketCap:0,buys:0,sells:0,txns24h:0,
+    launchedAt:c.created_at||Date.now(),launchProgress:0,sparkline:[]};
+}
+function normToken(t,i){
+  const sym=t.symbol||'???';
+  return{id:t.token_id||t.id||sym,rank:0,symbol:sym,name:t.name||sym,
+    chain:'xeris',dex:'XerisChain',source:'xeris-registry',url:`${XERIS_HOST}:${EXP}`,tokenAddress:t.token_id||'',
+    price:0,priceUsd:0,change1h:0,change6h:0,change24h:0,
+    volume24h:0,liquidity:0,marketCap:nv(t.market_cap),
+    buys:0,sells:0,txns24h:0,launchedAt:t.created_at||Date.now(),launchProgress:0,sparkline:[]};
+}
+function normBackend(p,i){
+  if(!p||!p.id)return null;
+  return{id:p.id,rank:i+1,symbol:p.symbol||'???',name:p.name||p.symbol||'???',
+    chain:p.chain||'solana',dex:p.dex||'DEX',source:p.source||'backend',url:p.url||'',tokenAddress:p.tokenAddress||p.mint||'',
+    price:nv(p.price||p.priceUsd),priceUsd:nv(p.priceUsd||p.price),
+    change1h:nv(p.change1h),change6h:nv(p.change6h),change24h:nv(p.change24h),
+    volume24h:nv(p.volume24h),liquidity:nv(p.liquidity),marketCap:nv(p.marketCap),
+    buys:nv(p.buys),sells:nv(p.sells),txns24h:nv(p.txns24h),
+    launchedAt:p.launchedAt||0,launchProgress:nv(p.launchProgress),sparkline:p.sparkline||[]};
+}
+
+// ─────────────────────────────────────────────────────────────
+// SIMULATION FALLBACK
+// ─────────────────────────────────────────────────────────────
+function simData(){
+  const T=[
+    // Xeris launchpad tokens
+    {sym:'XMEME',nm:'XerisMeme',ch:'xeris',dx:'XerisLaunch',src:'xeris-launchpad',p:.0000052,c1:8.1,c6:22.4,c24:45.2,v:34200,l:12100,mc:0,prog:67,buys:342,sells:118},
+    {sym:'XDOGE',nm:'XerisDoge', ch:'xeris',dx:'XerisLaunch',src:'xeris-launchpad',p:.0000089,c1:3.2,c6:11.1,c24:18.9,v:18400,l:6800,mc:0,prog:34,buys:211,sells:88},
+    {sym:'XPEPE',nm:'XerisP',   ch:'xeris',dx:'XerisLaunch',src:'xeris-launchpad',p:.00000034,c1:-2.1,c6:5.4,c24:-8.2,v:8900,l:3100,mc:0,prog:12,buys:89,sells:134},
+    {sym:'XWIF', nm:'Xeris Wif',ch:'xeris',dx:'XerisLaunch',src:'xeris-launchpad',p:.00041,c1:15.3,c6:28.7,c24:92.1,v:61000,l:24000,mc:0,prog:89,buys:891,sells:201},
+    {sym:'XCAT', nm:'XerisKitty',ch:'xeris',dx:'XerisLaunch',src:'xeris-launchpad',p:.0000021,c1:1.1,c6:4.2,c24:11.4,v:4400,l:1800,mc:0,prog:8,buys:44,sells:21},
+    // Xeris swap pools
+    {sym:'XRS',  nm:'XerisCoin',ch:'xeris',dx:'XerisSwap',src:'xeris-swap',p:.0042,c1:2.1,c6:5.6,c24:8.4,v:124000,l:280000,mc:2940000,prog:0,buys:0,sells:0},
+    {sym:'xUSDC',nm:'Xeris USD',ch:'xeris',dx:'XerisSwap',src:'xeris-swap',p:1.0001,c1:.01,c6:.02,c24:.03,v:89000,l:450000,mc:1000000,prog:0,buys:0,sells:0},
+    // Solana tokens
+    {sym:'BONK',nm:'Bonk',     ch:'solana',dx:'Raydium',  src:'backend',p:.0000182,c1:1.4,c6:3.2,c24:6.8,v:8200000,l:4100000,mc:1280000000,prog:0,buys:12400,sells:9800},
+    {sym:'WIF',  nm:'dogwifhat',ch:'solana',dx:'Raydium',  src:'backend',p:1.42,c1:-0.8,c6:2.1,c24:-4.2,v:42000000,l:22000000,mc:1420000000,prog:0,buys:21000,sells:18000},
+    {sym:'POPCAT',nm:'Popcat', ch:'solana',dx:'Orca',     src:'backend',p:.48,c1:5.2,c6:12.4,c24:22.1,v:14000000,l:7200000,mc:480000000,prog:0,buys:8900,sells:5600},
+    {sym:'PEPE2',nm:'Pepe 2.0',ch:'solana',dx:'PumpSwap', src:'backend',p:.0000041,c1:12.3,c6:34.1,c24:89.2,v:3100000,l:820000,mc:4100000,prog:0,buys:4200,sells:1800},
+    {sym:'MOODENG',nm:'Moo Deng',ch:'solana',dx:'Meteora',src:'backend',p:.024,c1:-3.1,c6:-8.4,c24:-12.7,v:1800000,l:940000,mc:24000000,prog:0,buys:3200,sells:4100},
+    {sym:'DEGEN',nm:'Degen',   ch:'solana',dx:'PumpSwap', src:'backend',p:.00021,c1:8.9,c6:21.3,c24:44.2,v:980000,l:320000,mc:210000,prog:0,buys:2100,sells:890},
+    {sym:'TRUMP',nm:'MAGA',    ch:'solana',dx:'Raydium',  src:'backend',p:8.42,c1:-1.2,c6:4.1,c24:-6.4,v:32000000,l:18000000,mc:1684000000,prog:0,buys:18000,sells:22000},
+    {sym:'FARTCOIN',nm:'Fartcoin',ch:'solana',dx:'PumpSwap',src:'backend',p:.64,c1:4.2,c6:11.8,c24:28.4,v:8200000,l:3100000,mc:640000000,prog:0,buys:9400,sells:6200},
+    {sym:'CHAD',nm:'ChadCoin', ch:'solana',dx:'PumpSwap', src:'backend',p:.00034,c1:-8.4,c6:-14.2,c24:-32.1,v:280000,l:74000,mc:340000,prog:0,buys:880,sells:2100},
+    {sym:'MOON',nm:'MoonToken',ch:'solana',dx:'Orca',     src:'backend',p:.00082,c1:18.4,c6:41.2,c24:102.4,v:1200000,l:380000,mc:820000,prog:0,buys:3400,sells:1100},
+    {sym:'UNI',  nm:'Uniswap', ch:'eth',  dx:'Uniswap',   src:'backend',p:7.82,c1:-0.4,c6:1.2,c24:-2.1,v:48000000,l:320000000,mc:5900000000,prog:0,buys:0,sells:0},
+    {sym:'SHIB', nm:'Shiba Inu',ch:'eth', dx:'Uniswap',   src:'backend',p:.0000228,c1:1.1,c6:2.8,c24:5.4,v:320000000,l:180000000,mc:13400000000,prog:0,buys:0,sells:0},
+    {sym:'CAKE', nm:'PancakeSwap',ch:'bsc',dx:'PancakeSwap',src:'backend',p:2.14,c1:-0.2,c6:0.8,c24:1.4,v:22000000,l:98000000,mc:614000000,prog:0,buys:0,sells:0},
+    {sym:'RUG',  nm:'TotallyNotRug',ch:'bsc',dx:'PancakeSwap',src:'backend',p:.0000001,c1:-44.2,c6:-78.1,c24:-98.4,v:2100,l:400,mc:100,prog:0,buys:12,sells:8800},
+    {sym:'BRETT',nm:'Brett',   ch:'base', dx:'Uniswap',   src:'backend',p:.096,c1:2.4,c6:8.1,c24:14.2,v:4200000,l:2100000,mc:96000000,prog:0,buys:0,sells:0},
+  ];
+  const now=Date.now();
+  return T.map((t,i)=>({
+    id:'sim-'+i,rank:i+1,symbol:t.sym,name:t.nm,
+    chain:t.ch,dex:t.dx,source:t.src,url:'',tokenAddress:'sim'+i,
+    price:t.p,priceUsd:t.p,
+    change1h:t.c1,change6h:t.c6,change24h:t.c24,
+    volume24h:t.v,liquidity:t.l,marketCap:t.mc||t.l*3,
+    buys:t.buys||Math.floor(t.v/200),sells:t.sells||Math.floor(t.v/250),
+    txns24h:(t.buys||0)+(t.sells||0)||Math.floor(t.v/150),
+    launchedAt:now-Math.random()*7*86400000,
+    launchProgress:t.prog||0,
+    sparkline:Array.from({length:24},(_,j)=>t.p*(1+Math.sin(j/3+i+1)*0.08*(Math.random()+.4)))
+  }));
+}
+
+// ─────────────────────────────────────────────────────────────
+// MICRO TICK — live price updates
+// ─────────────────────────────────────────────────────────────
+function microTick(){
+  if(!ALL.length)return;
+  ALL.forEach(p=>{
+    const drift=(Math.random()-.499)*.0025;
+    p.price=Math.max(1e-12,p.price*(1+drift));
+    p.priceUsd=p.price;
+    p.change1h+=drift*15*(Math.random()>.5?1:-1);
+    if(!Array.isArray(p.sparkline))p.sparkline=[];
+    p.sparkline.push(p.price);
+    if(p.sparkline.length>30)p.sparkline.shift();
+    if(Math.random()>.88){
+      drift>0?p.buys++:p.sells++;p.txns24h++;
+      // Whale alert if big
+      if(Math.random()>.95&&p.volume24h>10000){
+        const type=drift>0?'BUY':'SELL';
+        const amt=p.volume24h*(Math.random()*.02+.005);
+        addWhaleEvent(type,p.symbol,amt,p.chain);
+      }
+    }
+  });
+  render();
+  updateStats();
+}
+
+// ─────────────────────────────────────────────────────────────
+// MAIN INIT
+// ─────────────────────────────────────────────────────────────
+async function init(){
+  const seen=new Set();
+  const add=(arr)=>arr.filter(Boolean).forEach(p=>{if(!p.id||seen.has(p.id))return;seen.add(p.id);ALL.push(p);});
+
+  // 1. Xeris testnet (parallel)
+  const [launch,swaps,tokens]=await Promise.allSettled([fetchXerisLaunchpad(),fetchXerisSwaps(),fetchXerisTokens()]);
+  if(launch.status==='fulfilled'&&launch.value.length){
+    add(launch.value);
+    // whale events for each launchpad token
+    launch.value.forEach(p=>addWhaleEvent('LAUNCH',p.symbol,p.volume24h||2000,'XERIS',`Bonding curve ${nv(p.launchProgress).toFixed(0)}% filled`));
+  }
+  if(swaps.status==='fulfilled')add(swaps.value);
+  if(tokens.status==='fulfilled')add(tokens.value);
+
+  // 2. Backend Solana data
+  const bk=await fetchBackend();
+  add(bk.filter(Boolean));
+
+  // 3. Fallback simulation
+  if(ALL.length===0){
+    add(simData());
+  } else {
+    // Ensure we always have Xeris tokens — add sims if testnet returned nothing
+    if(!ALL.some(p=>p.chain==='xeris'))add(simData().filter(p=>p.chain==='xeris'));
+    // Add some Solana sims if backend was empty
+    if(ALL.filter(p=>p.chain!=='xeris').length<5)add(simData().filter(p=>p.chain!=='xeris'));
+  }
+
+  // Random whale events for existing tokens
+  ALL.slice(0,5).forEach(p=>{
+    const type=Math.random()>.5?'BUY':'SELL';
+    addWhaleEvent(type,p.symbol,p.volume24h*(.01+Math.random()*.03),p.chain);
+  });
+
+  applyFilter();
+  updateStats();
+  updateSideCounts();
+
+  // Live ticks
+  setInterval(microTick,1800);
+
+  // Periodic whale sim
+  setInterval(()=>{
+    if(!ALL.length)return;
+    const p=ALL[Math.floor(Math.random()*Math.min(ALL.length,15))];
+    if(!p)return;
+    const t=Math.random()>.5?'BUY':'SELL';
+    addWhaleEvent(t,p.symbol,p.volume24h*(Math.random()*.04+.01),p.chain);
+  },8000);
+
+  // Refresh Xeris launchpad every 30s
+  setInterval(async()=>{
+    const fresh=await fetchXerisLaunchpad();
+    if(!fresh.length)return;
+    fresh.forEach(fp=>{
+      const ex=ALL.find(x=>x.id===fp.id);
+      if(ex){ex.price=fp.price;ex.launchProgress=fp.launchProgress;ex.volume24h=fp.volume24h;ex.change24h=fp.change24h;}
+      else if(!seen.has(fp.id)){seen.add(fp.id);ALL.push(fp);addWhaleEvent('LAUNCH',fp.symbol,fp.volume24h||1000,'XERIS','New token launched!');}
+    });
+  },30000);
+
+  // Clock
+  setInterval(()=>{$('sb-time').textContent=new Date().toLocaleTimeString();},1000);
+}
+
+
+// ── WHALE FEED ────────────────────────────────────
+let whales = [];
+function addWhale(type, sym, amt, chain, note) {
+  whales.unshift({type, sym, amt, chain, note, ts: Date.now()});
+  if (whales.length > 60) whales.pop();
+  renderWhales();
+  const wc = document.getElementById('wc');
+  if (wc) wc.textContent = whales.length + ' events';
+}
+function renderWhales() {
+  const f = document.getElementById('wfeed');
+  if (!f) return;
+  if (!whales.length) { f.innerHTML = '<div class="empty" style="height:160px"><div class="emsg">Monitoring…</div></div>'; return; }
+  f.innerHTML = whales.slice(0, 30).map(e => {
+    const cls = e.type === 'BUY' ? 'buy' : e.type === 'SELL' ? 'sell' : 'launch';
+    const ago = Math.floor((Date.now() - e.ts) / 1000);
+    const agoT = ago < 60 ? ago + 's' : Math.floor(ago/60) + 'm';
+    return '<div class="wi ' + cls + '"><div class="wi-top"><span class="wi-sym">' + e.sym + '</span><span class="wi-type ' + e.type + '">' + e.type + '</span></div><div class="wi-amt">' + fU(e.amt) + '</div><div class="wi-meta"><span>' + (e.chain||'XERIS').toUpperCase() + '</span><span>' + agoT + ' ago</span></div>' + (e.note ? '<div class="wi-note">' + e.note + '</div>' : '') + '</div>';
+  }).join('');
+}
+
+init();
+</script>
+</body>
+</html>
