@@ -393,12 +393,39 @@ select option{background:var(--bg3);}
 <script src="/xeris-tx.js"></script>
 <script>
 const S = { address:null, balance:0, currentGame:null, rouletteBet:'red', lastTx:null, bjSeed:null };
+let _walletProvider = null;
+
+// SDK-compatible provider detection (xeris → solana.isXeris → solana)
+function detectProvider() {
+  if (window.xeris) return window.xeris;
+  if (window.solana && window.solana.isXeris) return window.solana;
+  if (window.solana) return window.solana;
+  return null;
+}
+
+function waitForProvider(timeoutMs) {
+  return new Promise((resolve) => {
+    const p = detectProvider();
+    if (p) return resolve(p);
+    const start = Date.now();
+    const interval = setInterval(() => {
+      const found = detectProvider();
+      if (found) { clearInterval(interval); resolve(found); }
+      else if (Date.now() - start > (timeoutMs || 3000)) { clearInterval(interval); resolve(null); }
+    }, 100);
+    try {
+      window.addEventListener('wallet-standard:app-ready', () => {
+        const found = detectProvider();
+        if (found) { clearInterval(interval); resolve(found); }
+      }, { once: true });
+    } catch (e) {}
+  });
+}
 
 function extractAddress(resp) {
   if (!resp) return null;
   if (typeof resp === 'string' && resp.length >= 20) return resp.trim();
-  if (typeof resp === 'object') {
-    // Try common wallet response shapes
+  if (resp && typeof resp === 'object') {
     const pk = resp.publicKey || resp.public_key;
     if (pk) {
       if (typeof pk === 'string') return pk.trim();
@@ -408,27 +435,49 @@ function extractAddress(resp) {
     }
     if (typeof resp.address === 'string') return resp.address.trim();
     if (typeof resp.wallet === 'string') return resp.wallet.trim();
-    // Last resort: look for any string value that looks like a base58 address
-    for (const v of Object.values(resp)) {
-      if (typeof v === 'string' && v.length >= 20 && v.length <= 50 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(v)) return v;
-    }
   }
   return null;
 }
 
 window.addEventListener('load', async () => {
   loadStats(); loadTreasury();
-  if (window.xeris) { try { const resp = await window.xeris.connect(); const addr = extractAddress(resp) || extractAddress(window.xeris); if (addr) onConnected(addr); } catch(e) {} }
-  else document.getElementById('walletNotice').style.display = 'block';
+  _walletProvider = detectProvider();
+  if (!_walletProvider) _walletProvider = await waitForProvider(2000);
+  if (_walletProvider) {
+    try {
+      const resp = await _walletProvider.connect({ onlyIfTrusted: true });
+      const addr = extractAddress(resp) || extractAddress(_walletProvider);
+      if (addr) onConnected(addr);
+    } catch(e) { /* not previously authorized */ }
+  } else {
+    document.getElementById('walletNotice').style.display = 'block';
+  }
 });
 
 async function loadStats() { try { const r = await fetch('/api/stats'); const d = await r.json(); document.getElementById('statGames').textContent = (d.gamesPlayed||0).toLocaleString(); } catch{} }
 async function loadTreasury() { try { const r = await fetch('/api/treasury'); const d = await r.json(); if (d.balance!==undefined) document.getElementById('statPot').textContent = (d.balance/1e9).toFixed(2)+' XRS'; } catch{} }
 
 async function connectWallet() {
-  if (S.address) { S.address=null; S.balance=0; document.getElementById('connectBtn').textContent='Connect Wallet'; document.getElementById('connectBtn').classList.remove('connected'); document.getElementById('balanceDisplay').style.display='none'; toast('Disconnected','info'); return; }
-  if (!window.xeris) { toast('Open in Xeris Wallet Browser','error'); return; }
-  try { const resp = await window.xeris.connect(); const addr = extractAddress(resp) || extractAddress(window.xeris); if (addr) onConnected(addr); else toast('Could not get address from wallet','error'); } catch(e) { toast('Failed: '+(e.message||e),'error'); }
+  if (S.address) {
+    if (_walletProvider && _walletProvider.disconnect) { try { _walletProvider.disconnect(); } catch {} }
+    _walletProvider = null; S.address=null; S.balance=0;
+    document.getElementById('connectBtn').textContent='Connect Wallet';
+    document.getElementById('connectBtn').classList.remove('connected');
+    document.getElementById('balanceDisplay').style.display='none';
+    toast('Disconnected','info'); return;
+  }
+  _walletProvider = detectProvider();
+  if (!_walletProvider) _walletProvider = await waitForProvider(3000);
+  if (!_walletProvider) { toast('Open in Xeris Wallet Browser or install a compatible wallet','error'); return; }
+  try {
+    const resp = await _walletProvider.connect();
+    const addr = extractAddress(resp) || extractAddress(_walletProvider);
+    if (addr) onConnected(addr); else toast('Could not get address from wallet','error');
+    if (_walletProvider.on) {
+      _walletProvider.on('accountChanged', (a) => { const ad = extractAddress(a); if (ad) onConnected(ad); });
+      _walletProvider.on('disconnect', () => { S.address=null; _walletProvider=null; document.getElementById('connectBtn').textContent='Connect Wallet'; document.getElementById('connectBtn').classList.remove('connected'); document.getElementById('balanceDisplay').style.display='none'; });
+    }
+  } catch(e) { toast('Failed: '+(e.message||e),'error'); }
 }
 
 async function onConnected(address) {
@@ -447,19 +496,19 @@ async function refreshBalance() {
 }
 
 async function walletSign(unsignedTx, messageBytes) {
-  const w = window.xeris;
+  const w = _walletProvider;
   if (!w) throw new Error('Xeris Wallet not available');
-  if (typeof w.signTransaction !== 'function') {
-    const available = Object.keys(w).filter(k => typeof w[k] === 'function').join(', ');
-    throw new Error('No signTransaction on wallet. Available: ' + available);
+  if (typeof w.signTransaction === 'function') {
+    const walletResult = await w.signTransaction(unsignedTx);
+    if (!walletResult) throw new Error('Signing cancelled');
+    return XerisTx.resolveSignedTx(walletResult, messageBytes);
   }
-  const walletResult = await w.signTransaction(unsignedTx);
-  if (!walletResult) throw new Error('Signing cancelled');
-  return XerisTx.resolveSignedTx(walletResult, messageBytes);
+  const available = Object.keys(w).filter(k => typeof w[k] === 'function').join(', ');
+  throw new Error('Wallet has no signTransaction method. Available: ' + available);
 }
 
 async function buildAndSignBetTx(amountXRS) {
-  if (!window.xeris) throw new Error('Xeris Wallet not available');
+  if (!_walletProvider) throw new Error('Xeris Wallet not available');
   const { unsignedTx, messageBytes } = await XerisTx.buildBetTx(S.address, amountXRS);
   const { signedTx, txSignature } = await walletSign(unsignedTx, messageBytes);
   // Always submit ourselves (wallet only signs, doesn't send)

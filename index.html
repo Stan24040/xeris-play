@@ -273,12 +273,40 @@ async function requestFaucet(address) {
 }
 
 // ══════════════════════════════════════════════
-//  WALLET (Xeris Wallet only)
+//  WALLET (Xeris SDK-compatible provider detection)
 // ══════════════════════════════════════════════
+let _walletProvider = null;
+
+function detectProvider() {
+  if (window.xeris) return window.xeris;
+  if (window.solana && window.solana.isXeris) return window.solana;
+  if (window.solana) return window.solana;
+  return null;
+}
+
+function waitForProvider(timeoutMs) {
+  return new Promise((resolve) => {
+    const p = detectProvider();
+    if (p) return resolve(p);
+    const start = Date.now();
+    const interval = setInterval(() => {
+      const found = detectProvider();
+      if (found) { clearInterval(interval); resolve(found); }
+      else if (Date.now() - start > (timeoutMs || 3000)) { clearInterval(interval); resolve(null); }
+    }, 100);
+    try {
+      window.addEventListener('wallet-standard:app-ready', () => {
+        const found = detectProvider();
+        if (found) { clearInterval(interval); resolve(found); }
+      }, { once: true });
+    } catch (e) {}
+  });
+}
+
 function extractAddress(resp) {
   if (!resp) return null;
   if (typeof resp === 'string' && resp.length >= 20) return resp.trim();
-  if (typeof resp === 'object') {
+  if (resp && typeof resp === 'object') {
     const pk = resp.publicKey || resp.public_key;
     if (pk) {
       if (typeof pk === 'string') return pk.trim();
@@ -288,16 +316,14 @@ function extractAddress(resp) {
     }
     if (typeof resp.address === 'string') return resp.address.trim();
     if (typeof resp.wallet === 'string') return resp.wallet.trim();
-    for (const v of Object.values(resp)) {
-      if (typeof v === 'string' && v.length >= 20 && v.length <= 50 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(v)) return v;
-    }
   }
   return null;
 }
 
 async function connectWallet() {
   if (state.address) {
-    if (window.xeris) { try { window.xeris.disconnect(); } catch {} }
+    if (_walletProvider && _walletProvider.disconnect) { try { _walletProvider.disconnect(); } catch {} }
+    _walletProvider = null;
     state.address = null;
     state.balance = 0;
     document.getElementById('connectBtn').textContent = 'CONNECT';
@@ -308,16 +334,18 @@ async function connectWallet() {
     toast('Disconnected', 'info');
     return;
   }
-  if (!window.xeris) { toast('Open in Xeris Wallet Browser', 'error'); return; }
+  _walletProvider = detectProvider();
+  if (!_walletProvider) _walletProvider = await waitForProvider(3000);
+  if (!_walletProvider) { toast('Open in Xeris Wallet Browser or install a compatible wallet', 'error'); return; }
   try {
     toast('Connecting to Xeris Wallet…', 'info');
-    const resp = await window.xeris.connect();
-    const address = extractAddress(resp) || extractAddress(window.xeris);
+    const resp = await _walletProvider.connect();
+    const address = extractAddress(resp) || extractAddress(_walletProvider);
     if (!address) throw new Error('No address returned from wallet');
     onConnected(address);
-    if (window.xeris.on) {
-      window.xeris.on('accountChanged', (a) => { const addr = extractAddress(a); if (addr) onConnected(addr); else connectWallet(); });
-      window.xeris.on('disconnect', () => { state.address = null; document.getElementById('connectBtn').textContent = 'CONNECT'; document.getElementById('connectBtn').classList.remove('connected'); document.getElementById('buyBtn').disabled = true; document.getElementById('buyBtn').textContent = 'CONNECT WALLET FIRST'; });
+    if (_walletProvider.on) {
+      _walletProvider.on('accountChanged', (a) => { const addr = extractAddress(a); if (addr) onConnected(addr); else connectWallet(); });
+      _walletProvider.on('disconnect', () => { state.address = null; _walletProvider = null; document.getElementById('connectBtn').textContent = 'CONNECT'; document.getElementById('connectBtn').classList.remove('connected'); document.getElementById('buyBtn').disabled = true; document.getElementById('buyBtn').textContent = 'CONNECT WALLET FIRST'; });
     }
   } catch (e) { toast('Connection failed: ' + e.message, 'error'); }
 }
@@ -368,23 +396,22 @@ async function refreshLotteryState() {
 }
 
 // ══════════════════════════════════════════════
-//  WALLET SIGNING (per migration guide)
+//  WALLET SIGNING (SDK-compatible: signAndSendTransaction → signTransaction fallback)
 // ══════════════════════════════════════════════
 async function walletSign(unsignedTx, messageBytes) {
-  const w = window.xeris;
+  const w = _walletProvider;
   if (!w) throw new Error('Xeris Wallet not available');
 
-  if (typeof w.signTransaction !== 'function') {
-    const available = Object.keys(w).filter(k => typeof w[k] === 'function').join(', ');
-    throw new Error('No signTransaction on wallet. Available: ' + available);
+  // Prefer signTransaction (we need to submit ourselves for game verification)
+  if (typeof w.signTransaction === 'function') {
+    const walletResult = await w.signTransaction(unsignedTx);
+    if (!walletResult) throw new Error('Signing cancelled');
+    return XerisTx.resolveSignedTx(walletResult, messageBytes);
   }
 
-  const walletResult = await w.signTransaction(unsignedTx);
-  if (!walletResult) throw new Error('Signing cancelled');
-
-  // Extract sig, re-assemble in correct wire format (handles bincode + all return types)
-  const resolved = XerisTx.resolveSignedTx(walletResult, messageBytes);
-  return resolved; // { signature, signedTx, txSignature }
+  // Fallback: list available methods for debugging
+  const available = Object.keys(w).filter(k => typeof w[k] === 'function').join(', ');
+  throw new Error('Wallet has no signTransaction method. Available: ' + available);
 }
 
 // ══════════════════════════════════════════════
@@ -393,7 +420,7 @@ async function walletSign(unsignedTx, messageBytes) {
 async function handleBuy() {
   if (!state.address) { connectWallet(); return; }
   if (state.isBuying) return;
-  if (!window.xeris) { toast('Open in Xeris Wallet Browser to sign', 'error'); return; }
+  if (!_walletProvider) { toast('Open in Xeris Wallet Browser or install a compatible wallet', 'error'); return; }
   const qty = clampInt(document.getElementById('ticketCount').value, 1, CONFIG.MAX_TICKETS);
   const costXRS = qty * CONFIG.TICKET_PRICE;
 
@@ -511,8 +538,14 @@ document.getElementById('ticketCount').addEventListener('input', () => updateSta
 //  INIT
 // ══════════════════════════════════════════════
 async function init() {
-  if (window.xeris) {
-    try { const resp = await window.xeris.connect(); const addr = extractAddress(resp) || extractAddress(window.xeris); if (addr) onConnected(addr); } catch {}
+  _walletProvider = detectProvider();
+  if (!_walletProvider) _walletProvider = await waitForProvider(2000);
+  if (_walletProvider) {
+    try {
+      const resp = await _walletProvider.connect({ onlyIfTrusted: true });
+      const addr = extractAddress(resp) || extractAddress(_walletProvider);
+      if (addr) onConnected(addr);
+    } catch (e) { /* not previously authorized — ignore */ }
   } else {
     document.getElementById('walletNotice').style.display = 'block';
   }

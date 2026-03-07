@@ -187,7 +187,7 @@ async function fetchBlockhash() {
     const res = await fetch(`${XERIS_RPC}/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getRecentBlockhash', params: [] }),
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getLatestBlockhash', params: [] }),
     });
     const data = await res.json();
     const bh = data?.result?.value?.blockhash || data?.result?.blockhash;
@@ -534,7 +534,7 @@ app.get('/api/xeris/blockhash', asyncHandler(async (req, res) => {
   try {
     const r = await fetch(`${XERIS_RPC}/`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getRecentBlockhash', params: [] }),
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getLatestBlockhash', params: [] }),
     });
     res.json(await r.json());
   } catch (e) {
